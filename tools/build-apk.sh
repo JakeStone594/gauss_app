@@ -24,12 +24,16 @@ source "$TC/env.sh"
 for t in aapt2 d8 zipalign apksigner javac keytool; do
     command -v "$t" >/dev/null || { echo "missing tool: $t" >&2; exit 1; }
 done
+# JDK 24+ warns every time apksigner's bundled crypto library loads native code; this JVM flag
+# (accepted by JDK 17+) grants it quietly. apksigner's wrapper turns "-Jxyz" into "-xyz".
+APKSIGNER=(apksigner -J-enable-native-access=ALL-UNNAMED)
 
 A="$HERE/android"
 OUT="$HERE/build"
 VC="${VERSION_CODE:-1}"
 VN="${VERSION_NAME:-1.0}"
-rm -rf "$OUT"
+# Clean the intermediates only — signed APKs already in build/ are kept.
+rm -rf "$OUT/gen" "$OUT/classes" "$OUT/dex" "$OUT/res.zip" "$OUT/sources.txt" "$OUT"/app.*.apk
 mkdir -p "$OUT/gen" "$OUT/classes" "$OUT/dex"
 
 echo "── assets: the web app"
@@ -60,11 +64,11 @@ if [[ $RELEASE == 1 ]]; then
     [[ -f "$KS" ]] || { echo "no release keystore at $KS — run tools/make-release-key.sh first" >&2; exit 1; }
     APK="$OUT/gauss-$VN.apk"
     if [[ -n "${GAUSS_KS_PASS:-}" ]]; then
-        apksigner sign --ks "$KS" --ks-key-alias "${GAUSS_KS_ALIAS:-gauss}" --ks-pass env:GAUSS_KS_PASS \
+        "${APKSIGNER[@]}" sign --ks "$KS" --ks-key-alias "${GAUSS_KS_ALIAS:-gauss}" --ks-pass env:GAUSS_KS_PASS \
             --out "$APK" "$OUT/app.aligned.apk"
     else
         [[ -t 0 ]] || { echo "release signing needs a terminal for the passphrase (or GAUSS_KS_PASS)" >&2; exit 1; }
-        apksigner sign --ks "$KS" --ks-key-alias "${GAUSS_KS_ALIAS:-gauss}" --out "$APK" "$OUT/app.aligned.apk"
+        "${APKSIGNER[@]}" sign --ks "$KS" --ks-key-alias "${GAUSS_KS_ALIAS:-gauss}" --out "$APK" "$OUT/app.aligned.apk"
     fi
 else
     KS="$A/debug.keystore"
@@ -73,9 +77,9 @@ else
             -dname "CN=Gauss debug" -keyalg RSA -keysize 2048 -validity 10000 >/dev/null 2>&1
     fi
     APK="$OUT/gauss.apk"
-    apksigner sign --ks "$KS" --ks-pass pass:android --ks-key-alias debug --out "$APK" "$OUT/app.aligned.apk"
+    "${APKSIGNER[@]}" sign --ks "$KS" --ks-pass pass:android --ks-key-alias debug --out "$APK" "$OUT/app.aligned.apk"
 fi
-apksigner verify "$APK"
+"${APKSIGNER[@]}" verify "$APK"
 rm -f "$OUT/app.unsigned.apk" "$OUT/app.aligned.apk" "$APK.idsig"
 echo "built $APK ($(du -h "$APK" | cut -f1), version $VN code $VC, $([[ $RELEASE == 1 ]] && echo release key || echo debug key))"
-echo "signer: $(apksigner verify --print-certs "$APK" | grep -m1 'SHA-256 digest' | sed 's/.*digest: //')"
+echo "signer: $("${APKSIGNER[@]}" verify --print-certs "$APK" | grep -m1 'SHA-256 digest' | sed 's/.*digest: //')"
