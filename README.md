@@ -56,7 +56,18 @@ Serve `web/` over http(s) — `python3 -m http.server -d web 8080` is enough loc
 the phone and choose *Add to Home screen*. `sw.js` caches the files, so it works offline afterwards.
 Bump `CACHE` in `sw.js` whenever a file changes.
 
+## Installing a release APK
+
+Releases carry `gauss-<version>.apk` with its SHA-256. It is signed with a local debug key, not a
+store key: Android will ask you to allow installs from this source, and an update installs over
+the previous version only if it was signed with the same key — a build from another machine
+generates a different key and must be installed after uninstalling the old one.
+
 ## Limits, the same as the desktop tool
 
 At most 10 rows and 10 columns; powers up to a two-digit exponent, not chained; systems with a
 parameter (`m`) are refused — the case split is a by-hand skill, substitute a value to check a case.
+
+## Licence
+
+MIT — see `LICENSE`.
