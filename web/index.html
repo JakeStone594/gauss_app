@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gauss — row reduction, step by step</title>
+<meta name="theme-color" content="#2457d6">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header>
+  <h1>Gauss <span class="he">· דירוג גאוס</span></h1>
+  <p class="sub">Row reduction step by step, exact arithmetic (fractions and complex numbers), in the lecture's notation
+    <code>L₂ → L₂ − 2·L₁</code>. Solve by hand first — then check here.</p>
+</header>
+
+<main>
+<section class="card" id="input-card">
+  <div class="tabs" role="tablist">
+    <button class="tab active" data-tab="grid" role="tab">Grid</button>
+    <button class="tab" data-tab="text" role="tab">Text / equations</button>
+  </div>
+
+  <div id="tab-grid" class="tabpanel">
+    <div class="toolbar">
+      <span class="stepper"><span class="lbl">Rows</span>
+        <button id="rows-minus" title="fewer rows">−</button><b id="rows-n">3</b><button id="rows-plus" title="more rows">+</button></span>
+      <span class="stepper"><span class="lbl">Columns</span>
+        <button id="cols-minus" title="fewer columns">−</button><b id="cols-n">3</b><button id="cols-plus" title="more columns">+</button></span>
+      <label class="switch"><input type="checkbox" id="aug" checked>
+        <span>Augmented — the last column is the right-hand side <code>b</code></span></label>
+    </div>
+    <div id="grid"></div>
+    <p class="hint"><span class="kbd-hint">Tab / arrows move · Enter moves down (on the last row: solves) · <kbd>Ctrl</kbd>+<kbd>Enter</kbd> solves ·
+      paste a whole matrix into any cell · </span>entries: <code>3</code> <code>-1/2</code> <code>0.25</code> <code>2-3i</code> <code>(1+i)/2</code> · empty = 0</p>
+  </div>
+
+  <div id="tab-text" class="tabpanel" hidden>
+    <textarea id="text" rows="6" spellcheck="false"
+      placeholder="x + 2y + 3z = 13&#10;2x + y + z = 8&#10;5x + 2z = 16&#10;&#10;or rows:  1 2 3 | 13; 2 1 1 | 8; 5 0 2 | 16&#10;complex:  1+i, -1 | 2+i; i, 2-3i | 1"></textarea>
+    <label class="switch"><input type="checkbox" id="text-s">
+      <span>No <code>|</code> in the rows — treat the last column as the right-hand side</span></label>
+    <p class="hint">Rows separated by <code>;</code> or new lines. Unknowns: single letters, optionally indexed (<code>x</code>, <code>t</code>, <code>x1</code>);
+      <code>i</code> is always the imaginary unit. A parameter (<code>m</code>) is refused — substitute a value to check one case.</p>
+  </div>
+
+  <div class="actions">
+    <button id="solve" class="primary">Solve <span class="kbd-hint"><kbd>Ctrl</kbd>+<kbd>Enter</kbd></span></button>
+    <button id="clear">Clear</button>
+    <button id="random">Random</button>
+    <select id="examples"><option value="">Examples…</option></select>
+  </div>
+  <div class="options">
+    <label><input type="checkbox" id="show-steps" checked> Show steps</label>
+    <label><input type="checkbox" id="practice"> Practice mode — reveal one step at a time</label>
+  </div>
+  <div id="error" class="error" hidden></div>
+  <div id="history-wrap" hidden><span class="lbl">Recent</span><div id="history"></div></div>
+</section>
+
+<section class="card" id="welcome">
+  <h2>Results appear here</h2>
+  <p>Enter a matrix on the left (or pick an example), then press <strong>Solve</strong>. You will get:</p>
+  <ul>
+    <li>every row operation, in the lecture's notation — <code>L₂ → L₂ − 2·L₁</code> — with the pivot and the changed rows highlighted;</li>
+    <li>the echelon form and the canonical echelon form (<bdi>מטריצה מדורגת / מדורגת קנונית</bdi>);</li>
+    <li>the solution: one, none, or infinitely many with parameters <code>α, β, …</code> — checked by substituting it back.</li>
+  </ul>
+  <p><strong>Practice mode</strong> hides the steps and reveals them one at a time: work out the next operation on paper first.</p>
+</section>
+<section class="card" id="output" hidden></section>
+</main>
+
+<footer>Only the three elementary row operations of lecture 3 (<bdi>שיעור 3</bdi>) are used; a pivot of ±1 below is swapped up, as by hand.
+  The answer is substituted back into your original equations before it is shown.</footer>
+<script src="engine.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

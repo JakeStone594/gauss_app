@@ -1,0 +1,16 @@
+# build output and generated copies
+build/
+android/assets/
+android/gen/
+
+# signing key — generated locally by tools/build-apk.sh on first use, never published
+android/debug.keystore
+*.keystore
+*.jks
+*.idsig
+
+# tooling noise
+__pycache__/
+*.pyc
+node_modules/
+.DS_Store
