@@ -1,12 +1,20 @@
 #!/usr/bin/env bash
-# Build build/gauss.apk from android/ + web/ — no Gradle, just the Android build-tools.
+# Build the APK from android/ + web/ — no Gradle, just the Android build-tools.
 #
-#   tools/build-apk.sh              (needs tools/setup-toolchain.sh to have run once)
+#   tools/build-apk.sh              debug build → build/gauss.apk, signed with android/debug.keystore
+#                                   (generated on first use; fine for your own phone)
+#   tools/build-apk.sh --release    release build → build/gauss-<version>.apk, signed with the
+#                                   release key (~/keys/gauss-app-release.jks, or $GAUSS_KS).
+#                                   apksigner asks for the passphrase; set GAUSS_KS_PASS to skip
+#                                   the prompt in your own shell — never put it in a file.
 #
 # Steps: web/ → android/assets · aapt2 compile+link (resources, manifest, assets) · javac · d8
-# (classes.dex) · zipalign · apksigner with a local debug key (android/debug.keystore, generated
-# on first use). Version code/name come from VERSION_CODE / VERSION_NAME, default 1 / 1.0.
+# (classes.dex) · zipalign · apksigner. Version code/name come from VERSION_CODE / VERSION_NAME,
+# default 1 / 1.0. Needs tools/setup-toolchain.sh to have run once.
 set -euo pipefail
+
+RELEASE=0
+[[ "${1:-}" == "--release" ]] && RELEASE=1
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 TC="${TOOLCHAIN:-$HOME/android-toolchain}"
@@ -47,12 +55,27 @@ d8 --release --min-api 24 --lib "$ANDROID_JAR" --output "$OUT/dex" $(find "$OUT/
 
 echo "── align + sign"
 zipalign -f 4 "$OUT/app.unsigned.apk" "$OUT/app.aligned.apk"
-KS="$A/debug.keystore"
-if [[ ! -f "$KS" ]]; then
-    keytool -genkeypair -keystore "$KS" -storepass android -keypass android -alias debug \
-        -dname "CN=Gauss debug" -keyalg RSA -keysize 2048 -validity 10000 >/dev/null 2>&1
+if [[ $RELEASE == 1 ]]; then
+    KS="${GAUSS_KS:-$HOME/keys/gauss-app-release.jks}"
+    [[ -f "$KS" ]] || { echo "no release keystore at $KS — run tools/make-release-key.sh first" >&2; exit 1; }
+    APK="$OUT/gauss-$VN.apk"
+    if [[ -n "${GAUSS_KS_PASS:-}" ]]; then
+        apksigner sign --ks "$KS" --ks-key-alias "${GAUSS_KS_ALIAS:-gauss}" --ks-pass env:GAUSS_KS_PASS \
+            --out "$APK" "$OUT/app.aligned.apk"
+    else
+        [[ -t 0 ]] || { echo "release signing needs a terminal for the passphrase (or GAUSS_KS_PASS)" >&2; exit 1; }
+        apksigner sign --ks "$KS" --ks-key-alias "${GAUSS_KS_ALIAS:-gauss}" --out "$APK" "$OUT/app.aligned.apk"
+    fi
+else
+    KS="$A/debug.keystore"
+    if [[ ! -f "$KS" ]]; then
+        keytool -genkeypair -keystore "$KS" -storepass android -keypass android -alias debug \
+            -dname "CN=Gauss debug" -keyalg RSA -keysize 2048 -validity 10000 >/dev/null 2>&1
+    fi
+    APK="$OUT/gauss.apk"
+    apksigner sign --ks "$KS" --ks-pass pass:android --ks-key-alias debug --out "$APK" "$OUT/app.aligned.apk"
 fi
-apksigner sign --ks "$KS" --ks-pass pass:android --ks-key-alias debug --out "$OUT/gauss.apk" "$OUT/app.aligned.apk"
-apksigner verify "$OUT/gauss.apk"
-rm -f "$OUT/app.unsigned.apk" "$OUT/app.aligned.apk" "$OUT/gauss.apk.idsig"
-echo "built $OUT/gauss.apk ($(du -h "$OUT/gauss.apk" | cut -f1), version $VN code $VC)"
+apksigner verify "$APK"
+rm -f "$OUT/app.unsigned.apk" "$OUT/app.aligned.apk" "$APK.idsig"
+echo "built $APK ($(du -h "$APK" | cut -f1), version $VN code $VC, $([[ $RELEASE == 1 ]] && echo release key || echo debug key))"
+echo "signer: $(apksigner verify --print-certs "$APK" | grep -m1 'SHA-256 digest' | sed 's/.*digest: //')"

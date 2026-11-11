@@ -58,10 +58,27 @@ Bump `CACHE` in `sw.js` whenever a file changes.
 
 ## Installing a release APK
 
-Releases carry `gauss-<version>.apk` with its SHA-256. It is signed with a local debug key, not a
-store key: Android will ask you to allow installs from this source, and an update installs over
-the previous version only if it was signed with the same key — a build from another machine
-generates a different key and must be installed after uninstalling the old one.
+Releases carry `gauss-<version>.apk` with its SHA-256. Android will ask you to allow installs from
+this source. An update installs over the previous version only if it was signed with the same key,
+so check the signer before trusting a build:
+
+```
+apksigner verify --print-certs gauss-1.2.apk | grep 'SHA-256'
+```
+
+The release key's certificate fingerprint is listed in each release's notes (from 1.2 on; 1.1 was
+signed with a throwaway debug key, so 1.2 has to be installed after uninstalling 1.1).
+
+## Signing
+
+`tools/build-apk.sh` signs with a local debug key (`android/debug.keystore`, generated on first
+use, git-ignored) — fine for your own phone. `tools/build-apk.sh --release` signs with the release
+key, created once by `tools/make-release-key.sh` **in your own terminal**: keytool asks for the
+passphrase with hidden input, and apksigner asks for it again at every release build (or reads
+`GAUSS_KS_PASS` from your shell). The passphrase lives in your password manager and nowhere else;
+the keystore (`~/keys/gauss-app-release.jks`) is never committed and needs an encrypted backup
+that survives the machine. Lose it and updates become reinstalls; leak it and anyone can ship
+"updates" to your users.
 
 ## Limits, the same as the desktop tool
 
