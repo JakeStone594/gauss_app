@@ -66,8 +66,12 @@ so check the signer before trusting a build:
 apksigner verify --print-certs gauss-1.2.apk | grep 'SHA-256'
 ```
 
-The release key's certificate fingerprint is listed in each release's notes (from 1.2 on; 1.1 was
-signed with a throwaway debug key, so 1.2 has to be installed after uninstalling 1.1).
+The release key's certificate fingerprint, from 1.2 on (1.1 was signed with a throwaway debug key,
+so 1.2 has to be installed after uninstalling 1.1):
+
+```
+SHA-256: 043cefd664565f34dd72bbfda3cce531d2472ea6e463b417e6ce303bbc50a212
+```
 
 ## Signing
 
