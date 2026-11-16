@@ -38,6 +38,11 @@ for (const c of golden) {
     else fails.push(`${JSON.stringify(c.text)}: expected a rejection (${c.error}) but got a result`);
     continue;
   }
+  if (c.parametric !== undefined) {      // solved case-by-case by the Python engine; not ported yet
+    if (err) pass++;
+    else fails.push(`${JSON.stringify(c.text)}: a parameter (${c.parametric}) must be rejected by the app`);
+    continue;
+  }
   if (err) { fails.push(`${JSON.stringify(c.text)}: threw "${err.message}"`); continue; }
   const { text, ...rest } = got;
   if (typeof text !== 'string' || !text.length) fails.push(`${JSON.stringify(c.text)}: no text rendering`);

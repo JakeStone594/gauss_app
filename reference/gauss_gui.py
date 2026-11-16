@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Snapshot of linear_algebra/tools/gauss_gui.py (the Python reference engine), taken 2026-11-11.
+# Snapshot of linear_algebra/tools/gauss_gui.py (the Python reference engine), taken 2026-11-16.
 # The JavaScript engine in web/engine.js is verified against THIS code via tools/golden.py.
 """A graphical front end for gauss.py — opens in your browser.
 
@@ -54,8 +54,34 @@ TIMEOUT = 20            # seconds a single solve may take
 
 # ─────────────────────────────── the engine, as JSON ───────────────────────────────
 
-def analyse(text, system=False):
-    """Run the engine on `text` and return a JSON-serialisable description of the whole run."""
+def F(M):
+    return [[gauss.fmt(x) for x in row] for row in M]
+
+
+def reduction_json(red):
+    return {"steps": [{"phase": s["phase"], "pivot": s["pivot"], "ops": s["ops"], "matrix": F(s["matrix"])}
+                      for s in red.trace],
+            "echelon": F(red.echelon), "canonical": F(red.A), "pivots": red.pivots, "rank": len(red.pivots)}
+
+
+def solution_json(res, names, bar, field):
+    if res["status"] == "none":
+        return {"status": "none", "row": F([res["row"]])[0], "rhs": gauss.fmt(res["row"][bar])}
+    sol, free, params = res["sol"], res["free"], res["params"]
+    values = [gauss.lin(*sol[c]) for c in range(bar)]
+    ps = [params[f] for f in free]
+    return {
+        "status": res["status"], "values": values,
+        "free": [names[f] for f in free], "params": ps,
+        "set": "S = {(" + ", ".join(values) + ")" + (f" | {', '.join(ps)} ∈ {field}" if free else "") + "}",
+        "example": [gauss.fmt(sol[c][0]) for c in range(bar)] if free else None,
+        "ok": res["ok"],
+    }
+
+
+def analyse(text, system=False, param=None):
+    """Run the engine on `text` and return a JSON-serialisable description of the whole run.
+    param: the parameter's name for equations ('m'); None lets a letter in a matrix entry be one."""
     if len(text) > MAX_LEN:
         raise ValueError(f"input too long ({len(text)} characters; the limit is {MAX_LEN})")
     if not ALLOWED.fullmatch(text):
@@ -65,52 +91,53 @@ def analyse(text, system=False):
     if BIG_POWER.search(text):
         raise ValueError("powers may have at most a two-digit exponent and cannot be chained")
 
-    rows, bar, names = gauss.parse_matrix(text, system=system)
+    rows, bar, names, psym = gauss.parse_input(text, system=system, param=param or "auto")
     if len(rows) > MAX_DIM or len(rows[0]) - (1 if bar is not None else 0) > MAX_DIM:
         raise ValueError(f"at most {MAX_DIM} rows and {MAX_DIM} columns (plus the right-hand side)")
 
-    field = "ℂ" if any(sp.im(x) != 0 for r in rows for x in r) else "ℝ"
-    red = gauss.Reducer(rows, bar, quiet=True)
-    red.forward()
-    red.backward()
+    field = "ℂ" if any((x.has(sp.I) if x.free_symbols else sp.im(x) != 0) for r in rows for x in r) else "ℝ"
+    out = {"input": F(rows), "bar": bar, "names": names, "field": field, "rows": len(rows), "cols": len(rows[0])}
 
-    def F(M):
-        return [[gauss.fmt(x) for x in row] for row in M]
+    if psym is None:
+        exact = all(gauss.is_exact_number(x) for r in rows for x in r)
+        red = gauss.Reducer(rows, bar, quiet=True, norm=gauss.num if exact else gauss.symnorm)
+        red.forward()
+        red.backward()
+        out.update(reduction_json(red))
+        if bar is not None:
+            out["solution"] = solution_json(gauss.solution(red, rows), names, bar, field)
+        out["text"] = cli_text(text, system, param)
+        return out
 
-    out = {
-        "input": F(rows), "bar": bar, "names": names, "field": field,
-        "rows": len(rows), "cols": len(rows[0]),
-        "steps": [{"phase": s["phase"], "pivot": s["pivot"], "ops": s["ops"], "matrix": F(s["matrix"])}
-                  for s in red.trace],
-        "echelon": F(red.echelon), "canonical": F(red.A),
-        "pivots": red.pivots, "rank": len(red.pivots),
+    # a parameter: the generic reduction, the special values, and every case solved on its own
+    P = gauss.parametric(rows, bar, psym)
+    values = [gauss.fmt(v) for v in P["values"]]
+    out["parameter"] = str(psym)
+    out.update(reduction_json(P["red"]))
+    out["special"] = {
+        "origins": [[gauss.fmt(e), where] for e, where in P["origins"]],
+        "values": values,
+        "unsolved": [gauss.fmt(f) for f in P["unsolved"]],
+        "undefined": [gauss.fmt(v) for v in P["undefined"]],
     }
-    if bar is not None:
-        res = gauss.solution(red, rows)
-        if res["status"] == "none":
-            out["solution"] = {"status": "none", "row": F([res["row"]])[0],
-                               "rhs": gauss.fmt(res["row"][bar])}
-        else:
-            sol, free, params = res["sol"], res["free"], res["params"]
-            values = [gauss.lin(*sol[c]) for c in range(bar)]
-            ps = [params[f] for f in free]
-            out["solution"] = {
-                "status": res["status"], "values": values,
-                "free": [names[f] for f in free], "params": ps,
-                "set": "S = {(" + ", ".join(values) + ")" + (f" | {', '.join(ps)} ∈ {field}" if free else "") + "}",
-                "example": [gauss.fmt(sol[c][0]) for c in range(bar)] if free else None,
-                "ok": res["ok"],
-            }
-    out["text"] = cli_text(text, system)
+    out["generic"] = {
+        "condition": f"{psym} ∉ {{{', '.join(values)}}}" if values else f"every {psym}",
+        "solution": solution_json(P["generic"], names, bar, field) if bar is not None else None,
+    }
+    out["cases"] = [{"value": gauss.fmt(c["value"]), "same_as_generic": c["same_as_generic"],
+                     "input": F(c["rows"]), **reduction_json(c["red"]),
+                     "solution": solution_json(c["res"], names, bar, field) if bar is not None else None}
+                    for c in P["cases"]]
+    out["text"] = cli_text(text, system, param)
     return out
 
 
-def cli_text(text, system):
+def cli_text(text, system, param=None):
     """The command-line tool's own output for the same input — for 'copy as text'."""
     buf = io.StringIO()
     with contextlib.redirect_stdout(buf), contextlib.redirect_stderr(buf):
         try:
-            gauss.main((["-s"] if system else []) + [text])
+            gauss.main((["-s"] if system else []) + (["-p", param] if param else []) + [text])
         except SystemExit:
             pass
     return buf.getvalue()
@@ -139,10 +166,10 @@ def _pool_reset():
         _pool = None
 
 
-def analyse_safely(text, system=False):
+def analyse_safely(text, system=False, param=None):
     with _lock:
         try:
-            return _pool_get().apply_async(analyse, (text, system)).get(timeout=TIMEOUT)
+            return _pool_get().apply_async(analyse, (text, system, param)).get(timeout=TIMEOUT)
         except multiprocessing.TimeoutError:
             _pool_reset()
             raise ValueError(f"gave up after {TIMEOUT} seconds — this input is too heavy for an exact "
@@ -171,7 +198,8 @@ class Handler(BaseHTTPRequestHandler):
             return self._json(413, {"error": "request too large"})
         try:
             req = json.loads(self.rfile.read(n) or b"{}")
-            self._json(200, analyse_safely(str(req.get("text", "")), bool(req.get("system"))))
+            param = str(req.get("param") or "").strip() or None
+            self._json(200, analyse_safely(str(req.get("text", "")), bool(req.get("system")), param))
         except ValueError as e:
             self._json(400, {"error": str(e)})
         except Exception as e:  # noqa: BLE001 — report, never crash the server

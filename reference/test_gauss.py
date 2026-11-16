@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Snapshot of linear_algebra/tools/test_gauss.py (the Python reference engine), taken 2026-11-11.
+# Snapshot of linear_algebra/tools/test_gauss.py (the Python reference engine), taken 2026-11-16.
 # The JavaScript engine in web/engine.js is verified against THIS code via tools/golden.py.
 """Test tools/gauss.py against an independent route.
 
@@ -110,6 +110,13 @@ def main():
     g = gauss_gui.analyse("0 2 1 | 3; 1 1 1 | 2; 2 0 1 | 1")
     expect([o["label"] for o in g["steps"][0]["ops"]] == ["L₁ ↔ L₂"]
            and [o["label"] for o in g["steps"][1]["ops"]] == ["L₃ → L₃ − 2·L₁"], "gui: a swap is a step of its own")
+    g = gauss_gui.analyse("mx + y + z = 1; x + my + z = m; x + y + mz = m^2", param="m")
+    expect(g["parameter"] == "m" and g["special"]["values"] == ["−2", "1"]
+           and g["generic"]["solution"]["values"] == ["−(m + 1)/(m + 2)", "1/(m + 2)", "(m + 1)²/(m + 2)"]
+           and [c["solution"]["status"] for c in g["cases"]] == ["none", "infinite"]
+           and g["cases"][1]["steps"] and "SPECIAL VALUES" in g["text"], "gui: parametric JSON")
+    g = gauss_gui.analyse("1 m | 2; m 1 | 2")
+    expect(g.get("parameter") == "m" and g["special"]["values"] == ["−1", "1"], "gui: parameter auto-detected in matrix form")
     g = gauss_gui.analyse("1 2; 3 4")
     expect(g["bar"] is None and "solution" not in g and g["canonical"] == [["1", "0"], ["0", "1"]], "gui: plain matrix")
     for bad in ("9^9^9^9 1 | 2", "2^123 | 1", "1 2 | 3'", "1 2 | 3; import os", "; ".join(["1 2"] * 11)):
@@ -127,6 +134,63 @@ def main():
         gauss_gui._pool_reset()
     expect(gauss_gui.analyse_safely("1 2 | 3; 4 5 | 6")["solution"]["status"] == "unique", "gui: worker replaced after a hang")
     gauss_gui._pool_reset()
+
+    # ── 1e. systems with a parameter (lecture 3, pp. 233–277) ──
+    m = sp.Symbol("m")
+    rows, bar, names, psym = gauss.parse_input("mx + y + z = 1; x + my + z = m; x + y + mz = m^2", param="m")
+    expect(psym == m and names == ["x", "y", "z"], "param: equations with -p m")
+    P = gauss.parametric(rows, bar, psym)
+    expect(P["values"] == [-2, 1], f"param: special values of system 2, got {P['values']}")
+    g = P["generic"]
+    vals = [gauss.lin(*g["sol"][c]) for c in range(bar)]
+    expect(g["status"] == "unique" and g["ok"] and vals == ["−(m + 1)/(m + 2)", "1/(m + 2)", "(m + 1)²/(m + 2)"],
+           f"param: generic solution of system 2, got {vals}")
+    by_value = {c["value"]: c for c in P["cases"]}
+    expect(by_value[-2]["res"]["status"] == "none" and gauss.fmt(by_value[-2]["res"]["row"][bar]) == "3",
+           "param: m = −2 has no solution (0 = 3)")
+    expect(by_value[1]["res"]["status"] == "infinite" and len(by_value[1]["res"]["free"]) == 2 and by_value[1]["res"]["ok"],
+           "param: m = 1 has two free variables")
+    leading = [gauss.fmt(e) for e, _ in P["origins"]]
+    expect(leading == ["1 − m", "(1 − m)(m + 2)"], f"param: the lecture's leading entries, got {leading}")
+
+    rows, bar, names, psym = gauss.parse_input("2 1 -m | 0; -3 -1 3 | 2m; 4 3 m | 4", param="auto")   # matrix form: m found by itself
+    expect(psym == m and names == ["x₁", "x₂", "x₃"], "param: matrix form auto-detects m")
+    P = gauss.parametric(rows, bar, psym)
+    vals = [gauss.lin(*P["generic"]["sol"][c]) for c in range(bar)]
+    expect(P["values"] == [1] and vals == ["−2(2m + 3)/3", "2(m + 2)", "−2/3"], f"param: system 1 generic, got {vals}")
+    c1 = P["cases"][0]["res"]
+    expect(c1["status"] == "infinite" and [gauss.lin(*c1["sol"][c]) for c in range(bar)] == ["−2 + 2α", "4 − 3α", "α"],
+           "param: system 1 at m = 1")
+    rows_v, red_v, res_v = gauss.run_case(rows, bar, psym, sp.Integer(1))
+    expect(res_v["status"] == "infinite", "param: run_case at m = 1")
+
+    rows, bar, names, psym = gauss.parse_input("1 m; m 1", param="auto")               # a matrix, not a system
+    P = gauss.parametric(rows, bar, psym)
+    expect(P["values"] == [-1, 1] and P["generic"] is None and len(P["red"].pivots) == 2, "param: rank of a plain matrix")
+
+    rows, bar, names, psym = gauss.parse_input("m 2 | 1; 1 m | 0", param="auto")
+    P = gauss.parametric(rows, bar, psym)
+    expect([gauss.fmt(v) for v in P["values"]] == ["−√2", "√2"] and all(c["res"]["status"] == "none" for c in P["cases"]),
+           "param: irrational special values are solved symbolically")
+
+    rows, bar, names, psym = gauss.parse_input("1/(m+1) 1 | 1; 1 2 | 3", param="auto")
+    P = gauss.parametric(rows, bar, psym)
+    expect(P["undefined"] == [-1] and -1 not in [c["value"] for c in P["cases"]], "param: undefined input value is reported, not solved")
+
+    for bad, why in (("mx + y = 1", "needs -p"), ("m k | 1", "two parameters"), ("1 m | 2", "numeric reader")):
+        try:
+            if why == "numeric reader":
+                gauss.parse_matrix(bad)
+            else:
+                gauss.parse_input(bad, param="auto")
+            fails.append(f"param: accepted {bad!r} ({why})")
+        except ValueError:
+            pass
+    o = output(["-a", "-p", "m", "mx + y + z = 1; x + my + z = m; x + y + mz = m^2"])
+    expect("m ∈ {−2, 1}" in o and "For m = −2" in o and "S = ∅" in o and "(m + 1)²/(m + 2)" in o, "param: CLI output")
+    o = output(["-a", "--case", "1", "2 1 -m | 0; -3 -1 3 | 2m; 4 3 m | 4"])
+    expect("Case m = 1" in o and "Infinitely many" in o, "param: --case output")
+    expect("(i)·L₁" in output(["-i | -2-2i"]), "numeric labels unchanged: i stays in parentheses")
 
     # ── 2. random matrices vs sympy ──
     rng = random.Random(20261109)
@@ -171,7 +235,7 @@ def main():
                 expect(all(sp.simplify(a - b) == 0 for a, b in zip(s["xs"], sol)), f"#{trial} values")
         n_cases += 1
 
-    print(f"lecture examples: 4 + 3 bad-input rejections + 5 output/flag checks + 14 GUI checks;  random systems vs sympy: {n_cases}")
+    print(f"lecture examples: 4 + 3 bad-input rejections + 5 output/flag checks + 16 GUI checks + 17 parameter checks;  random systems vs sympy: {n_cases}")
     if fails:
         print(f"FAILURES: {len(fails)}")
         for f in fails[:20]:

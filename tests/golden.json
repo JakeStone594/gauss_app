@@ -9465,27 +9465,27 @@
 {
 "text": "mx + y = 1",
 "system": false,
-"error": "not linear: 'm*x + y = 1' contains m*x. If a letter there is a parameter (m, k, …), the system needs a case split by hand — substitute a value of the parameter to check one case."
+"error": "not linear: 'm*x + y = 1' contains m*x. If a letter there is a parameter (m, k, …), name it with -p m and the cases are worked out for you."
 },
 {
 "text": "x^2 = 1",
 "system": false,
-"error": "not linear: 'x^2 = 1' contains x**2. If a letter there is a parameter (m, k, …), the system needs a case split by hand — substitute a value of the parameter to check one case."
+"error": "not linear: 'x^2 = 1' contains x**2. If a letter there is a parameter (m, k, …), name it with -p m and the cases are worked out for you."
 },
 {
 "text": "x*y = 1",
 "system": false,
-"error": "not linear: 'x*y = 1' contains x*y. If a letter there is a parameter (m, k, …), the system needs a case split by hand — substitute a value of the parameter to check one case."
+"error": "not linear: 'x*y = 1' contains x*y. If a letter there is a parameter (m, k, …), name it with -p m and the cases are worked out for you."
 },
 {
 "text": "xy = 1; x + y = 2",
 "system": false,
-"error": "not linear: 'x*y = 1' contains x*y. If a letter there is a parameter (m, k, …), the system needs a case split by hand — substitute a value of the parameter to check one case."
+"error": "not linear: 'x*y = 1' contains x*y. If a letter there is a parameter (m, k, …), name it with -p m and the cases are worked out for you."
 },
 {
 "text": "abc = 1",
 "system": false,
-"error": "not linear: 'a*b*c = 1' contains a*b*c. If a letter there is a parameter (m, k, …), the system needs a case split by hand — substitute a value of the parameter to check one case."
+"error": "not linear: 'a*b*c = 1' contains a*b*c. If a letter there is a parameter (m, k, …), name it with -p m and the cases are worked out for you."
 },
 {
 "text": "x = 1 = 2",
@@ -9550,12 +9550,12 @@
 {
 "text": "2×3 | 1",
 "system": false,
-"error": "the entry '2×3' contains a letter other than i. Systems with a parameter (m, k, …) need a case split by hand — substitute a value of the parameter to check one case."
+"parametric": "×3"
 },
 {
 "text": "1 m | 2",
 "system": false,
-"error": "the entry 'm' contains a letter other than i. Systems with a parameter (m, k, …) need a case split by hand — substitute a value of the parameter to check one case."
+"parametric": "m"
 },
 {
 "text": "sqrt(2) 1 | 1",
@@ -9565,7 +9565,7 @@
 {
 "text": "x + y",
 "system": false,
-"error": "the entry 'x+y' contains a letter other than i. Systems with a parameter (m, k, …) need a case split by hand — substitute a value of the parameter to check one case."
+"error": "one parameter at a time — found x, y"
 },
 {
 "text": "1 2 | 3; x + y = 1",

@@ -103,8 +103,11 @@ that survives the machine. Lose it and updates become reinstalls; leak it and an
 
 ## Limits, the same as the desktop tool
 
-At most 10 rows and 10 columns; powers up to a two-digit exponent, not chained; systems with a
-parameter (`m`) are refused — the case split is a by-hand skill, substitute a value to check a case.
+At most 10 rows and 10 columns; powers up to a two-digit exponent, not chained. Systems with a
+parameter (`m`) are refused by the app's engine: the Python reference (`reference/gauss.py -p m`,
+and its browser GUI) handles them — generic reduction, the special values, each case solved on
+its own — but that part is not ported to JavaScript yet; in the app, substitute a value to check
+one case.
 
 ## Licence
 

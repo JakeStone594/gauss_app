@@ -5,7 +5,9 @@ Every case is run through the PYTHON engine (gauss_gui.analyse — the snapshot 
 verified by its own test_gauss.py), and its full JSON output is recorded. The JS port is then
 tested by tests/test_engine.js: same input → identical steps, forms and solution, string for
 string. For inputs the Python engine rejects, only the fact of rejection is recorded; the
-wording of error messages is allowed to differ.
+wording of error messages is allowed to differ. Inputs with a parameter (a letter in a matrix
+entry, e.g. "1 m | 2") are solved by the Python engine case by case; the JS engine does not do
+that yet, so they are recorded as "parametric" and the JS engine must reject them.
 
     python3 -I tools/golden.py                 uses the snapshot of the engine in reference/
     python3 -I tools/golden.py --engine DIR    uses gauss.py + gauss_gui.py from DIR instead
@@ -95,6 +97,9 @@ for text, system in CASES:
     try:
         r = gauss_gui.analyse(text, system)
         r.pop("text")
+        if "parameter" in r:
+            out.append({"text": text, "system": system, "parametric": r["parameter"]})
+            continue
         out.append({"text": text, "system": system, "expect": r})
     except ValueError as e:
         out.append({"text": text, "system": system, "error": str(e)})
@@ -103,4 +108,5 @@ os.makedirs(os.path.dirname(OUT), exist_ok=True)
 with open(OUT, "w", encoding="utf-8") as f:
     json.dump(out, f, ensure_ascii=False, indent=0)
 ok = sum("expect" in c for c in out)
-print(f"{len(out)} cases written to {os.path.normpath(OUT)}: {ok} solved, {len(out) - ok} rejected")
+par = sum("parametric" in c for c in out)
+print(f"{len(out)} cases written to {os.path.normpath(OUT)}: {ok} solved, {par} parametric (Python only), {len(out) - ok - par} rejected")
