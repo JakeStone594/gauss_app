@@ -12,7 +12,7 @@
  *   param: the parameter's name for equations ('m'); omitted, a letter in a matrix entry is one. */
 (function (root, factory) {
   if (typeof module === 'object' && module.exports) module.exports = factory();
-  else root.GaussEngine = factory();
+  else { root.GaussEngine = factory(); root.GaussEngine.source = String(factory); }   // app.js builds its Web Worker from it
 }(typeof self !== 'undefined' ? self : this, function () {
 
   class GaussError extends Error {}
@@ -20,7 +20,16 @@
 
   const MAX_LEN = 4000, MAX_DIM = 10;
   const BAD_CHAR = /[^0-9A-Za-z_+\-*/^().,;|=\s−·×]/;
-  const BIG_POWER = /(\^|\*\*)\s*\(?\s*-?\d{3,}|(\^|\*\*)[^,;|\s]*(\^|\*\*)/;
+  /* Powers: at most a two-digit exponent, and never chained (9^9^9^9 would run forever). A chain
+     is a power whose exponent is itself raised to a power or holds one, or a power of a lone
+     power — not two powers side by side: m^3-m^2, (m^2-1)/(m^2+1) and m^2(m+1)^2 are entries.
+     The same pattern as reference/gauss_gui.py's BIG_POWER; keep the two identical. */
+  const BIG_POWER = new RegExp([
+    String.raw`(\^|\*\*)\s*\(?\s*-?\d{3,}`,                                       // a three-digit exponent
+    String.raw`(\^|\*\*)\s*[-+−]?\s*([0-9A-Za-z_.]+|\([^()]*\))\s*(\^|\*\*)`,      // 2^3^4, m^9 ^ 9, 2^(9)^9
+    String.raw`(\^|\*\*)\s*\([^)]*(\^|\*\*)`,                                     // 2^(3^4), m^(1 + 2^3)
+    String.raw`\(\s*[-+−]?\s*[0-9A-Za-z_.]*\s*(\^|\*\*)\s*[-+−]?\s*[0-9A-Za-z_.]+\s*\)\s*(\^|\*\*)`,  // (m^9)^9
+  ].join('|'));
   const SUB = '₀₁₂₃₄₅₆₇₈₉', SUP = '⁰¹²³⁴⁵⁶⁷⁸⁹';
   const sub = s => String(s).replace(/\d/g, d => SUB[d]);
   const sup = s => String(s).replace(/\d/g, d => SUP[d]);
@@ -164,15 +173,88 @@
   const itrim = N => { let n = N.length; while (n > 0 && N[n - 1] === 0n) n--; return N.slice(0, n); };
 
   /* ───────────────────────── factoring over ℚ (gauss.py: sympy's factor_list) ───────────────────────── */
-  function divisorsOf(x) {
-    x = babs(x);
-    const out = [];
-    for (let i = 1n; i * i <= x; i++) if (x % i === 0n) { out.push(i); if (i * i !== x) out.push(x / i); }
-    return out.sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
+  /* Integers are factored by trial division by the primes below 1000, then Miller–Rabin and
+     Pollard's rho — so a large coefficient (10²⁰, 1000000007·1000000009) takes milliseconds,
+     where trial division up to its square root would run for hours. */
+  const SMALL_PRIMES = [];
+  for (let n = 2; n < 1000; n++) if (SMALL_PRIMES.every(p => n % p)) SMALL_PRIMES.push(n);
+  const SMALL_BIG = SMALL_PRIMES.map(BigInt);
+  const MR_BASES = [2n, 3n, 5n, 7n, 11n, 13n, 17n, 19n, 23n, 29n, 31n, 37n];
+  function modpow(b, e, m) {
+    let r = 1n;
+    b %= m;
+    while (e > 0n) { if (e & 1n) r = r * b % m; b = b * b % m; e >>= 1n; }
+    return r;
   }
-  function ievalQ(N, r) {   // N at the rational r, exactly
-    let acc = Q0;
-    for (let i = N.length - 1; i >= 0; i--) acc = qadd(qmul(acc, r), Q(N[i]));
+  function isPrime(n) {               // Miller–Rabin; with these bases it is exact below 3.3·10²⁴
+    if (n < 2n) return false;
+    for (const p of MR_BASES) { if (n === p) return true; if (n % p === 0n) return false; }
+    let d = n - 1n, s = 0;
+    while (!(d & 1n)) { d >>= 1n; s++; }
+    next: for (const a of MR_BASES) {
+      let x = modpow(a, d, n);
+      if (x === 1n || x === n - 1n) continue;
+      for (let i = 1; i < s; i++) { x = x * x % n; if (x === n - 1n) continue next; }
+      return false;
+    }
+    return true;
+  }
+  function rho(n) {                   // a proper factor of the odd composite n — Pollard, gcds in batches
+    for (let c = 1n; ; c++) {
+      const f = v => (v * v + c) % n;
+      let x = 2n, y = 2n, d = 1n;
+      while (d === 1n) {
+        const x0 = x, y0 = y;
+        let q = 1n;
+        for (let i = 0; i < 64; i++) { x = f(x); y = f(f(y)); q = q * (x > y ? x - y : y - x) % n; }
+        d = bgcd(q, n);
+        if (d === n) {                // the batch stepped past the factor: walk it one step at a time
+          x = x0; y = y0; d = 1n;
+          while (d === 1n) { x = f(x); y = f(f(y)); d = bgcd(x > y ? x - y : y - x, n); }
+        }
+      }
+      if (d !== n) return d;          // otherwise the walk closed a cycle: another c
+    }
+  }
+  function primeFactors(x) {          // Map prime → exponent, x ≠ 0
+    let n = babs(x);
+    const out = new Map(), add = p => out.set(p, (out.get(p) || 0) + 1);
+    for (const p of SMALL_BIG) {
+      if (p * p > n) break;
+      while (n % p === 0n) { add(p); n /= p; }
+    }
+    const todo = n > 1n ? [n] : [];
+    while (todo.length) {
+      const m = todo.pop();
+      if (isPrime(m)) add(m);
+      else { const d = rho(m); todo.push(d, m / d); }
+    }
+    return out;
+  }
+  const divCache = new Map();
+  function divisorsOf(x) {            // the positive divisors of x, ascending ([] for 0)
+    x = babs(x);
+    if (x === 0n) return [];
+    const key = x.toString();
+    let ds = divCache.get(key);
+    if (!ds) {
+      ds = [1n];
+      for (const [p, k] of primeFactors(x)) {
+        const next = [];
+        for (const d of ds) for (let i = 0, pk = 1n; i <= k; i++, pk *= p) next.push(d * pk);
+        ds = next;
+      }
+      ds.sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
+      if (divCache.size > 2000) divCache.clear();
+      divCache.set(key, ds);
+    }
+    return ds;
+  }
+  const ievalInt = (N, x) => N.reduceRight((acc, c) => acc * x + c, 0n);    // N at the integer x
+  function ievalHom(N, a, b) {        // N(a/b)·bⁿ — an integer, zero exactly when a/b is a root
+    const n = N.length - 1;
+    let acc = N[n], bk = 1n;
+    for (let i = n - 1; i >= 0; i--) { bk *= b; acc = acc * a + N[i] * bk; }
     return acc;
   }
   function iexactDiv(N, F) {  // N / F over ℚ, which must be exact and integer here (Gauss's lemma)
@@ -192,9 +274,15 @@
   }
   /* {coeff: Q, factors: [{poly: BigInt[] (primitive, positive leading coefficient), k}]} such that
      N = coeff · Π poly^k. Rational roots are found exactly; a remaining factor of degree ≥ 4 is
-     also tried against quadratic factors with small coefficients. */
+     also tried against quadratic factors. Results are kept: one solve formats the same entries
+     again and again (every step, label, form and special value), and factoring is the costly
+     part — callers must not change what they get. */
+  const factorCache = new Map();
   function factorList(N) {
     N = itrim(N);
+    const key = N.join(',');
+    const known = factorCache.get(key);
+    if (known) return known;
     let content = 0n;
     for (const x of N) content = bgcd(content, x);
     const sign = N[N.length - 1] < 0n ? -1n : 1n;
@@ -204,31 +292,45 @@
     let k0 = 0;
     while (P.length > 1 && P[0] === 0n) { P = P.slice(1); k0++; }
     for (let i = 0; i < k0; i++) addFactor(factors, [0n, 1n]);
+    // rational roots ±p/q, p | the constant term and q | the leading coefficient, in lowest terms.
+    // Every one is tried — the special values are these roots — but cheaply first: for a root
+    // p/q, q − p divides P(1) and q + p divides P(−1).
     let found = true;
     while (P.length > 2 && found) {
       found = false;
       const ps = divisorsOf(P[0]), qs = divisorsOf(P[P.length - 1]);
-      outer: for (const q of qs) for (const p of ps) for (const s of [1n, -1n]) {
-        const root = Q(s * p, q);
-        if (!qzero(ievalQ(P, root))) continue;
-        const lin = [-s * p, q];                       // q·m − s·p, primitive, positive leading coefficient
-        P = iexactDiv(P, lin);
-        addFactor(factors, lin);
-        found = true;
-        break outer;
+      const P1 = ievalInt(P, 1n), Pm1 = ievalInt(P, -1n);
+      outer: for (const q of qs) for (const p of ps) {
+        if (bgcd(p, q) !== 1n) continue;
+        for (const s of [1n, -1n]) {
+          const sp = s * p, t = q - sp, u = q + sp;
+          if (t === 0n ? P1 !== 0n : P1 % t !== 0n) continue;
+          if (u === 0n ? Pm1 !== 0n : Pm1 % u !== 0n) continue;
+          if (ievalHom(P, sp, q) !== 0n) continue;
+          const lin = [-sp, q];                          // q·m − s·p, primitive, positive leading coefficient
+          P = iexactDiv(P, lin);
+          addFactor(factors, lin);
+          found = true;
+          break outer;
+        }
       }
     }
     if (P.length === 2) { addFactor(factors, P); P = [1n]; }
-    // quadratic factors a·m² + b·m + c of a remaining polynomial of degree ≥ 4
+    // quadratic factors a·m² + b·m + c of what remains (degree ≥ 4, no rational root): a divides
+    // the leading coefficient, c the constant term, and f(1) = a + b + c divides P(1), which
+    // fixes b; f(−1), f(2), f(−2) must divide P(−1), P(2), P(−2) before a division is tried.
     found = true;
     while (P.length >= 5 && found) {
       found = false;
-      const bound = P.reduce((m, x) => (babs(x) > m ? babs(x) : m), 0n);
-      const as = divisorsOf(P[P.length - 1]), cs = divisorsOf(P[0]);
-      if (bound > 400n || as.length * cs.length > 400) break;
-      outer2: for (const a of as) for (const c0 of cs) for (const sc of [1n, -1n]) for (let b = -bound; b <= bound; b++) {
-        const f = [sc * c0, b, a];
-        if (bgcd(bgcd(f[0], f[1]), f[2]) !== 1n) continue;
+      const as = divisorsOf(P[P.length - 1]), cs = divisorsOf(P[0]), ds = divisorsOf(ievalInt(P, 1n));
+      if (as.length * cs.length * ds.length > 200000) break;     // left whole rather than searched for minutes
+      const Pm1 = ievalInt(P, -1n), P2 = ievalInt(P, 2n), Pm2 = ievalInt(P, -2n);
+      outer2: for (const a of as) for (const c0 of cs) for (const sc of [1n, -1n]) for (const d0 of ds) for (const sd of [1n, -1n]) {
+        const c = sc * c0, b = sd * d0 - a - c;
+        const fm1 = a - b + c, f2 = 4n * a + 2n * b + c, fm2 = 4n * a - 2n * b + c;
+        if (fm1 === 0n || Pm1 % fm1 !== 0n || f2 === 0n || P2 % f2 !== 0n || fm2 === 0n || Pm2 % fm2 !== 0n) continue;
+        if (bgcd(bgcd(c, b), a) !== 1n) continue;
+        const f = [c, b, a];
         const [q, r] = pdivmod(itoC(P), itoC(f));
         if (r.length) continue;
         P = ifromC(q);
@@ -239,7 +341,30 @@
     }
     if (P.length > 1) addFactor(factors, P);
     factors.sort(factorCmp);
-    return { coeff, factors };
+    const res = { coeff, factors };
+    if (factorCache.size > 2000) factorCache.clear();
+    factorCache.set(key, res);
+    return res;
+  }
+
+  /* Whether a squarefree integer polynomial (an irreducible factor is) has a real root: Sturm's
+     theorem — the sign changes of its Sturm sequence at −∞, less those at +∞. */
+  function hasRealRoot(N) {
+    if ((N.length - 1) % 2 === 1) return true;
+    let a = itoC(N), b = ptrim(a.slice(1).map((c, i) => cmul(c, C(Q(BigInt(i + 1))))));
+    const seq = [a];
+    while (b.length) { seq.push(b); const r = pdivmod(a, b)[1]; a = b; b = pneg(r); }
+    const changes = atPlus => {
+      let n = 0, prev = 0;
+      for (const p of seq) {
+        let s = p[p.length - 1].re.n > 0n ? 1 : -1;
+        if (!atPlus && (p.length - 1) % 2 === 1) s = -s;
+        if (prev && s !== prev) n++;
+        prev = s;
+      }
+      return n;
+    };
+    return changes(false) > changes(true);
   }
 
   /* ───────────────────────── formatting (gauss.py: fmt, fmt_sym, _poly_text, _poly_str, fmt_coef, lin) ───────────────────────── */
@@ -711,8 +836,9 @@
 
   /* ───────────────────────── systems with a parameter (gauss.py: special_values, parametric) ───────────────────────── */
   /* The RATIONAL values of the parameter at which any expression vanishes — the lecture's cases —
-     plus the irreducible factors of degree ≥ 2, whose roots are not rational and are left for
-     work by hand. */
+     plus the irreducible factors of degree ≥ 2 that do vanish for some real value: their roots
+     are irrational and are left for work by hand. A factor with no real root (m² + 1) never
+     vanishes — the parameter is real — so it is no case at all. */
   function specialValues(exprs, sym) {
     const values = [], unsolved = [];
     for (const e of exprs) {
@@ -722,7 +848,7 @@
         if (poly.length === 2) {
           const v = Q(-poly[0], poly[1]);
           if (!values.some(x => qeq(x, v))) values.push(v);
-        } else {
+        } else if (hasRealRoot(poly)) {
           const txt = polyStr(poly, sym);
           if (!unsolved.includes(txt)) unsolved.push(txt);
         }
@@ -866,8 +992,10 @@
     for (const f of sp.unsolved) lines.push(`  ⚠ ${f} = 0 has no rational root — treat that case by hand`);
     if (sp.undefined.length) lines.push(`  ⚠ the matrix itself is undefined at ${sym} ∈ {${sp.undefined.join(', ')}} (a denominator vanishes)`);
     lines.push(RULE);
-    if (bar === null) {
-      lines.push(`  (a matrix, not a system: the rank is ${P.red.pivots.length} for every ${sym} outside the special values)`);
+    if (bar === null) {                     // a matrix, not a system: its rank, generic and at each value
+      lines.push('  RANK  (דרגה)', RULE, `▸ For ${out.generic.condition}  — the generic case: rank ${P.red.pivots.length}`);
+      out.cases.forEach(c => lines.push(`▸ For ${sym} = ${c.value}: rank ${c.rank}`));
+      lines.push(RULE);
       return lines.join('\n') + '\n';
     }
     lines.push('  RESULT  (תוצאה)', RULE, `▸ For ${out.generic.condition}  — the generic case:`);
@@ -922,8 +1050,10 @@
       origins: P.origins.map(([e, where]) => [K.fmt(e), where]),
       values, unsolved: P.unsolved, undefined: P.undefinedAt.map(v => fmt(C(v))),
     };
+    // where the generic case holds: not at a special value — the irrational ones named by their factor
+    const condition = [...(values.length ? [`${sym} ∉ {${values.join(', ')}}`] : []), ...P.unsolved.map(f => `${f} ≠ 0`)];
     out.generic = {
-      condition: values.length ? `${sym} ∉ {${values.join(', ')}}` : `every ${sym}`,
+      condition: condition.length ? condition.join(' and ') : `every ${sym}`,
       solution: bar !== null ? solutionJson(P.generic, names, bar, field, K) : null,
     };
     out.cases = P.cases.map(c => ({

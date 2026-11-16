@@ -178,24 +178,98 @@ function markBadEntry(msg) {
   document.querySelectorAll('#grid input').forEach(inp => { if (inp.value.trim() === m[1].trim()) inp.classList.add('bad'); });
 }
 
+/* The engine runs off the page's thread, so a heavy input neither freezes the page nor runs
+   forever: in a Web Worker built from the engine's own source (the Android app opens the page
+   from file://, where a worker cannot be loaded from a file), stopped after TIMEOUT seconds —
+   the limit the desktop tool's server has. Where no worker can be made, it runs in the page. */
+const TIMEOUT = 20;                     // seconds
+let worker = null, workerURL = null;    // worker: a Worker, null (none yet) or false (unavailable)
+let pending = null, jobs = 0;           // the solve in flight: {id, text, system, param, resolve, reject, timer}
+
+function newWorker() {
+  try {
+    if (!workerURL) {
+      const src = "'use strict';\nself.GaussEngine = (" + GaussEngine.source + ')();\n' +
+        'onmessage = e => {\n' +
+        '  const { id, text, system, param } = e.data;\n' +
+        '  try { postMessage({ id, data: GaussEngine.analyse(text, system, param) }); }\n' +
+        '  catch (err) { postMessage({ id, error: String(err && err.message), gauss: err instanceof GaussEngine.GaussError }); }\n' +
+        '};\n';
+      workerURL = URL.createObjectURL(new Blob([src], { type: 'text/javascript' }));
+    }
+    const w = new Worker(workerURL);
+    w.onmessage = e => {
+      if (!pending || e.data.id !== pending.id) return;
+      const job = pending;
+      pending = null; clearTimeout(job.timer);
+      if (e.data.error === undefined) job.resolve(e.data.data);
+      else job.reject({ gauss: e.data.gauss, message: e.data.error });
+    };
+    w.onerror = e => {                  // the worker itself failed, not the input: solve in the page from now on
+      e.preventDefault();
+      w.terminate(); worker = false;
+      if (pending) { const job = pending; pending = null; clearTimeout(job.timer); runInPage(job); }
+    };
+    return w;
+  } catch (e) { return false; }
+}
+
+function runInPage(job) {               // after a moment, so that "Solving…" is drawn first
+  setTimeout(() => {
+    try { job.resolve(GaussEngine.analyse(job.text, job.system, job.param)); }
+    catch (err) { job.reject({ gauss: err instanceof GaussEngine.GaussError, message: err.message }); }
+  }, 30);
+}
+
+function runEngine(text, system, param) {
+  return new Promise((resolve, reject) => {
+    if (pending) {                      // a new solve replaces one still running: stop that one
+      clearTimeout(pending.timer); pending = null;
+      if (worker) { worker.terminate(); worker = null; }
+    }
+    const job = { id: ++jobs, text, system, param, resolve, reject, timer: null };
+    if (worker === null) worker = GaussEngine.source && typeof Worker !== 'undefined' ? newWorker() : false;
+    if (!worker) { runInPage(job); return; }
+    pending = job;
+    job.timer = setTimeout(() => {
+      if (pending !== job) return;
+      pending = null;
+      worker.terminate(); worker = null;    // the next solve gets a fresh one
+      reject({ gauss: true, message: `gave up after ${TIMEOUT} seconds — this input is too heavy for an exact calculator` });
+    }, TIMEOUT * 1000);
+    worker.postMessage({ id: job.id, text, system, param });
+  });
+}
+
+const SOLVE_LABEL = [...$('#solve').childNodes].map(n => n.cloneNode(true));
+function busy(on) {
+  const b = $('#solve');
+  b.disabled = on;
+  if (on) b.textContent = 'Solving…'; else b.replaceChildren(...SOLVE_LABEL.map(n => n.cloneNode(true)));
+}
+
+let solving = 0;
 function solve() {
   let text, system = false;
   if (state.mode === 'grid') { text = gridToText(); $('#text').value = text; }
   else { text = $('#text').value; system = $('#text-s').checked; }
   if (!text.trim()) return showError('Nothing to solve — enter a matrix or some equations.');
   const param = $('#param').value.trim();
-  let data;
-  try {
-    data = GaussEngine.analyse(text, system, param);
-  } catch (err) {
-    showError(err instanceof GaussEngine.GaussError ? err.message : 'Unexpected error: ' + err.message);
-    return;
-  }
-  hideError();
-  state.data = data; state.text = text; state.system = system; state.param = param; state.revealed = 1;
-  setHash();
-  pushHistory(text, system, param);
-  render();
+  const id = ++solving;
+  busy(true);
+  runEngine(text, system, param).then(data => {
+    if (id !== solving) return;         // a newer solve took over
+    busy(false);
+    hideError();
+    state.data = data; state.text = text; state.system = system; state.param = param; state.revealed = 1;
+    setHash();
+    pushHistory(text, system, param);
+    render();
+  }, err => {
+    if (id !== solving) return;
+    busy(false);
+    showError(err.gauss ? err.message : 'Unexpected error: ' + err.message);
+  });
 }
 
 function setHash() {
@@ -218,16 +292,26 @@ function el(tag, cls, text) {
   return e;
 }
 
-/* "−3/4", "(8−4i)/5", "i/2" → stacked fraction; anything else as text. */
+/* "−3/4", "(8−4i)/5", "i/2", "(1 − m)(m + 2)/3" → stacked fraction; anything else as text. The
+   numerator loses its brackets only when one pair encloses all of it: "(8−4i)", not "(1 − m)(m + 2)". */
 function numEl(s) {
   const span = el('span', 'num');
-  const m = /^(−?)(?:\((.+)\)|([^/]+))\/(\d+)$/.exec(s);
+  const m = /^(−?)([^/]+)\/(\d+)$/.exec(s);
   if (!m) { span.textContent = s; return span; }
   if (m[1]) span.append(m[1]);
   const f = el('span', 'frac');
-  f.append(el('span', 'n', m[2] || m[3]), el('span', 'd', m[4]));
+  f.append(el('span', 'n', enclosed(m[2]) ? m[2].slice(1, -1) : m[2]), el('span', 'd', m[3]));
   span.append(f);
   return span;
+}
+function enclosed(s) {                  // "(…)" whose first '(' is closed by its last ')'
+  if (!s.startsWith('(') || !s.endsWith(')')) return false;
+  let depth = 0;
+  for (let i = 0; i < s.length - 1; i++) {
+    depth += s[i] === '(' ? 1 : s[i] === ')' ? -1 : 0;
+    if (depth === 0) return false;
+  }
+  return true;
 }
 
 function matrixEl(M, bar, o = {}) {
@@ -424,19 +508,21 @@ function renderParametric(d, out, showSteps) {
   sp.unsolved.forEach(f => sv.appendChild(el('p', 'note', `⚠ ${f} = 0 has no rational root — treat that case by hand.`)));
   if (sp.undefined.length) sv.appendChild(el('p', 'note', `⚠ the matrix itself is undefined at ${P} ∈ {${sp.undefined.join(', ')}} (a denominator vanishes).`));
   out.appendChild(sv); state.items.push(sv);
-  if (d.bar === null) {
-    out.appendChild(el('p', 'note', `A matrix, not a system: the rank is ${d.rank} for every ${P} outside the special values.`));
-    return;
+  const plain = d.bar === null;         // a matrix, not a system: the answer is its rank
+  if (plain) {
+    out.appendChild(el('p', 'note', `A matrix, not a system: the rank is ${d.rank} for ${d.generic.condition}` +
+      (d.cases.length ? ' — at each special value it is worked out below.' : '.')));
+  } else {
+    const g = resultEl(d.generic.solution, d, `For ${d.generic.condition} — the generic case`);
+    out.appendChild(g); state.items.push(g);
   }
-  const g = resultEl(d.generic.solution, d, `For ${d.generic.condition} — the generic case`);
-  out.appendChild(g); state.items.push(g);
   d.cases.forEach(c => {
     const det = el('details', 'case');
     const sum = el('summary');
-    sum.append(el('b', '', `${P} = ${c.value}`), ` — ${statusText(c.solution)}` +
+    sum.append(el('b', '', `${P} = ${c.value}`), plain ? ` — rank ${c.rank}` : ` — ${statusText(c.solution)}` +
                (c.same_as_generic ? ' (the generic formula is valid here too)' : ''));
     det.appendChild(sum);
-    det.append(heading(`At ${P} = ${c.value}`, undefined, 'the system with that value substituted'),
+    det.append(heading(`At ${P} = ${c.value}`, undefined, `the ${plain ? 'matrix' : 'system'} with that value substituted`),
                matrixEl(c.input, d.bar, { names: d.names }));
     if (showSteps) {
       let n = 0;
@@ -450,8 +536,8 @@ function renderParametric(d, out, showSteps) {
       }
     }
     det.append(heading('Canonical echelon form', 'מטריצה מדורגת קנונית', `rank ${c.rank}`),
-               matrixEl(c.canonical, d.bar, { names: d.names, pivots: c.pivots }),
-               resultEl(c.solution, d, `For ${P} = ${c.value}`));
+               matrixEl(c.canonical, d.bar, { names: d.names, pivots: c.pivots }));
+    if (!plain) det.appendChild(resultEl(c.solution, d, `For ${P} = ${c.value}`));
     out.appendChild(det); state.items.push(det);
   });
 }

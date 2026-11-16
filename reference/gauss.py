@@ -47,7 +47,10 @@ A SYSTEM WITH A PARAMETER (שיעור 3, עמ' 233–277)
     one must be used (the lecture's choice). The special values are the zeros of every leading
     entry of the echelon form, of every expression divided by, and of the right-hand side of a
     row whose left side vanished. Each special value is substituted into the ORIGINAL system
-    and solved on its own, so the three cases come out as the lecture states them.
+    and solved on its own, so the three cases come out as the lecture states them. A factor
+    whose roots are real but irrational (m² − 2) is named in the generic case's condition and
+    left for work by hand. Without a right-hand side the answer is the rank: generic, and at
+    each special value.
 
 ⚠ What the syllabus says about tools like this: allowed for CHECKING your own computation,
 not as the way you solve the homework. Solve by hand first, then compare step by step.
@@ -631,8 +634,9 @@ def solve(red, original, names, field):
 
 def special_values(exprs, sym):
     """The RATIONAL values of the parameter at which any of the expressions vanishes — the
-    lecture's cases — plus the irreducible factors of degree ≥ 2, whose roots are not rational
-    and are left for work by hand."""
+    lecture's cases — plus the irreducible factors of degree ≥ 2 that do vanish for some real
+    value: their roots are irrational and are left for work by hand. A factor with no real root
+    (m² + 1) never vanishes — the parameter is real — so it is no case at all."""
     values, unsolved = [], []
     for e in exprs:
         numer, _ = sp.fraction(sp.cancel(e))
@@ -643,7 +647,7 @@ def special_values(exprs, sym):
             if v not in values:
                 values.append(v)
         for f, _k in sp.factor_list(numer, sym)[1]:
-            if sp.degree(f, sym) >= 2:
+            if sp.degree(f, sym) >= 2 and sp.Poly(f, sym).count_roots() > 0:
                 txt = _poly_str(f, sym)
                 if txt not in unsolved:
                     unsolved.append(txt)
@@ -712,6 +716,15 @@ def parametric(rows, bar, sym):
             "undefined": undefined, "generic": generic, "cases": cases}
 
 
+def generic_condition(P):
+    """Where the generic case holds: every value of the parameter but the special ones — the
+    rational ones by value, the irrational ones by the factor that vanishes there."""
+    sym = P["sym"]
+    parts = [f"{sym} ∉ {{{', '.join(fmt(v) for v in P['values'])}}}"] if P["values"] else []
+    parts += [f"{f} ≠ 0" for f in P["unsolved"]]
+    return " and ".join(parts) if parts else f"every {sym}"
+
+
 def print_parametric(P, rows, names, field, quiet=False, answer_only=False):
     sym, red, bar = P["sym"], P["red"], P["red"].bar
     out = (lambda *x, **k: None) if answer_only else print
@@ -754,13 +767,19 @@ def print_parametric(P, rows, names, field, quiet=False, answer_only=False):
     if P["undefined"]:
         print(f"  ⚠ the matrix itself is undefined at {sym} ∈ {{{', '.join(fmt(v) for v in P['undefined'])}}} (a denominator vanishes)")
     print(RULE)
-    if bar is None:
-        print(f"  (a matrix, not a system: the rank is {len(red.pivots)} for every {sym} outside the special values)")
+    cond = generic_condition(P)
+    if bar is None:                                # a matrix, not a system: its rank, generic and at each value
+        print("  RANK  (דרגה)")
+        print(RULE)
+        print(f"▸ For {cond}  — the generic case: rank {len(red.pivots)}")
+        for case in P["cases"]:
+            print(f"▸ For {sym} = {fmt(case['value'])}: rank {len(case['red'].pivots)}")
+        print(RULE)
+        if P["cases"]:
+            print(f"  the full steps for one case:  --case {fmt(P['cases'][0]['value'])}")
         return
     print("  RESULT  (תוצאה)")
     print(RULE)
-    excluded = [fmt(v) for v in P["values"]]
-    cond = f"{sym} ∉ {{{', '.join(excluded)}}}" if excluded else f"every {sym}"
     print(f"▸ For {cond}  — the generic case:")
     describe(P["generic"], names, field, bar, indent="  ")
     for case in P["cases"]:

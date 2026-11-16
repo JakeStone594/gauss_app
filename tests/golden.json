@@ -16572,7 +16572,7 @@
 "undefined": []
 },
 "generic": {
-"condition": "every m",
+"condition": "m² − 2 ≠ 0",
 "solution": {
 "status": "unique",
 "values": [
@@ -17144,9 +17144,7 @@
 ]
 ],
 "values": [],
-"unsolved": [
-"m² + 2"
-],
+"unsolved": [],
 "undefined": []
 },
 "generic": {
@@ -20521,6 +20519,2785 @@
 }
 ]
 }
+},
+{
+"text": "m^3-m^2, 1 | 1; 1, m | 2",
+"system": false,
+"expect": {
+"input": [
+[
+"m²(m − 1)",
+"1",
+"1"
+],
+[
+"1",
+"m",
+"2"
+]
+],
+"bar": 2,
+"names": [
+"x₁",
+"x₂"
+],
+"field": "ℝ",
+"rows": 2,
+"cols": 3,
+"parameter": "m",
+"steps": [
+{
+"phase": 1,
+"pivot": [
+0,
+0
+],
+"ops": [
+{
+"kind": "swap",
+"rows": [
+0,
+1
+],
+"label": "L₁ ↔ L₂"
+}
+],
+"matrix": [
+[
+"1",
+"m",
+"2"
+],
+[
+"m²(m − 1)",
+"1",
+"1"
+]
+]
+},
+{
+"phase": 1,
+"pivot": [
+0,
+0
+],
+"ops": [
+{
+"kind": "add",
+"target": 1,
+"source": 0,
+"factor": "m²(1 − m)",
+"label": "L₂ → L₂ − (m²(m − 1))·L₁"
+}
+],
+"matrix": [
+[
+"1",
+"m",
+"2"
+],
+[
+"0",
+"−m⁴ + m³ + 1",
+"−2m³ + 2m² + 1"
+]
+]
+},
+{
+"phase": 2,
+"pivot": null,
+"ops": [
+{
+"kind": "scale",
+"target": 1,
+"factor": "−1/(m⁴ − m³ − 1)",
+"label": "L₂ → (−1/(m⁴ − m³ − 1))·L₂"
+}
+],
+"matrix": [
+[
+"1",
+"m",
+"2"
+],
+[
+"0",
+"1",
+"(2m³ − 2m² − 1)/(m⁴ − m³ − 1)"
+]
+]
+},
+{
+"phase": 2,
+"pivot": [
+1,
+1
+],
+"ops": [
+{
+"kind": "add",
+"target": 0,
+"source": 1,
+"factor": "−m",
+"label": "L₁ → L₁ − m·L₂"
+}
+],
+"matrix": [
+[
+"1",
+"0",
+"(m − 2)/(m⁴ − m³ − 1)"
+],
+[
+"0",
+"1",
+"(2m³ − 2m² − 1)/(m⁴ − m³ − 1)"
+]
+]
+}
+],
+"echelon": [
+[
+"1",
+"m",
+"2"
+],
+[
+"0",
+"−m⁴ + m³ + 1",
+"−2m³ + 2m² + 1"
+]
+],
+"canonical": [
+[
+"1",
+"0",
+"(m − 2)/(m⁴ − m³ − 1)"
+],
+[
+"0",
+"1",
+"(2m³ − 2m² − 1)/(m⁴ − m³ − 1)"
+]
+],
+"pivots": [
+[
+0,
+0
+],
+[
+1,
+1
+]
+],
+"rank": 2,
+"special": {
+"origins": [
+[
+"−m⁴ + m³ + 1",
+"leading entry of L₂ in the echelon form"
+]
+],
+"values": [],
+"unsolved": [
+"m⁴ − m³ − 1"
+],
+"undefined": []
+},
+"generic": {
+"condition": "m⁴ − m³ − 1 ≠ 0",
+"solution": {
+"status": "unique",
+"values": [
+"(m − 2)/(m⁴ − m³ − 1)",
+"(2m³ − 2m² − 1)/(m⁴ − m³ − 1)"
+],
+"free": [],
+"params": [],
+"set": "S = {((m − 2)/(m⁴ − m³ − 1), (2m³ − 2m² − 1)/(m⁴ − m³ − 1))}",
+"example": null,
+"ok": true
+}
+},
+"cases": []
+}
+},
+{
+"text": "(m^2-1)/(m^2+1), 1 | 1; 1, 1 | 2",
+"system": false,
+"expect": {
+"input": [
+[
+"(m − 1)(m + 1)/(m² + 1)",
+"1",
+"1"
+],
+[
+"1",
+"1",
+"2"
+]
+],
+"bar": 2,
+"names": [
+"x₁",
+"x₂"
+],
+"field": "ℝ",
+"rows": 2,
+"cols": 3,
+"parameter": "m",
+"steps": [
+{
+"phase": 1,
+"pivot": [
+0,
+0
+],
+"ops": [
+{
+"kind": "swap",
+"rows": [
+0,
+1
+],
+"label": "L₁ ↔ L₂"
+}
+],
+"matrix": [
+[
+"1",
+"1",
+"2"
+],
+[
+"(m − 1)(m + 1)/(m² + 1)",
+"1",
+"1"
+]
+]
+},
+{
+"phase": 1,
+"pivot": [
+0,
+0
+],
+"ops": [
+{
+"kind": "add",
+"target": 1,
+"source": 0,
+"factor": "(1 − m)(m + 1)/(m² + 1)",
+"label": "L₂ → L₂ − ((m − 1)(m + 1)/(m² + 1))·L₁"
+}
+],
+"matrix": [
+[
+"1",
+"1",
+"2"
+],
+[
+"0",
+"2/(m² + 1)",
+"(3 − m²)/(m² + 1)"
+]
+]
+},
+{
+"phase": 2,
+"pivot": null,
+"ops": [
+{
+"kind": "scale",
+"target": 1,
+"factor": "(m² + 1)/2",
+"label": "L₂ → ((m² + 1)/2)·L₂"
+}
+],
+"matrix": [
+[
+"1",
+"1",
+"2"
+],
+[
+"0",
+"1",
+"(3 − m²)/2"
+]
+]
+},
+{
+"phase": 2,
+"pivot": [
+1,
+1
+],
+"ops": [
+{
+"kind": "add",
+"target": 0,
+"source": 1,
+"factor": "−1",
+"label": "L₁ → L₁ − L₂"
+}
+],
+"matrix": [
+[
+"1",
+"0",
+"(m² + 1)/2"
+],
+[
+"0",
+"1",
+"(3 − m²)/2"
+]
+]
+}
+],
+"echelon": [
+[
+"1",
+"1",
+"2"
+],
+[
+"0",
+"2/(m² + 1)",
+"(3 − m²)/(m² + 1)"
+]
+],
+"canonical": [
+[
+"1",
+"0",
+"(m² + 1)/2"
+],
+[
+"0",
+"1",
+"(3 − m²)/2"
+]
+],
+"pivots": [
+[
+0,
+0
+],
+[
+1,
+1
+]
+],
+"rank": 2,
+"special": {
+"origins": [
+[
+"2/(m² + 1)",
+"leading entry of L₂ in the echelon form"
+]
+],
+"values": [],
+"unsolved": [],
+"undefined": []
+},
+"generic": {
+"condition": "every m",
+"solution": {
+"status": "unique",
+"values": [
+"(m² + 1)/2",
+"(3 − m²)/2"
+],
+"free": [],
+"params": [],
+"set": "S = {((m² + 1)/2, (3 − m²)/2)}",
+"example": null,
+"ok": true
+}
+},
+"cases": []
+}
+},
+{
+"text": "m^2x+m^3y=1; x-y=0",
+"system": false,
+"param": "m",
+"expect": {
+"input": [
+[
+"m²",
+"m³",
+"1"
+],
+[
+"1",
+"−1",
+"0"
+]
+],
+"bar": 2,
+"names": [
+"x",
+"y"
+],
+"field": "ℝ",
+"rows": 2,
+"cols": 3,
+"parameter": "m",
+"steps": [
+{
+"phase": 1,
+"pivot": [
+0,
+0
+],
+"ops": [
+{
+"kind": "swap",
+"rows": [
+0,
+1
+],
+"label": "L₁ ↔ L₂"
+}
+],
+"matrix": [
+[
+"1",
+"−1",
+"0"
+],
+[
+"m²",
+"m³",
+"1"
+]
+]
+},
+{
+"phase": 1,
+"pivot": [
+0,
+0
+],
+"ops": [
+{
+"kind": "add",
+"target": 1,
+"source": 0,
+"factor": "−m²",
+"label": "L₂ → L₂ − (m²)·L₁"
+}
+],
+"matrix": [
+[
+"1",
+"−1",
+"0"
+],
+[
+"0",
+"m²(m + 1)",
+"1"
+]
+]
+},
+{
+"phase": 2,
+"pivot": null,
+"ops": [
+{
+"kind": "scale",
+"target": 1,
+"factor": "1/(m²(m + 1))",
+"label": "L₂ → (1/(m²(m + 1)))·L₂"
+}
+],
+"matrix": [
+[
+"1",
+"−1",
+"0"
+],
+[
+"0",
+"1",
+"1/(m²(m + 1))"
+]
+]
+},
+{
+"phase": 2,
+"pivot": [
+1,
+1
+],
+"ops": [
+{
+"kind": "add",
+"target": 0,
+"source": 1,
+"factor": "1",
+"label": "L₁ → L₁ + L₂"
+}
+],
+"matrix": [
+[
+"1",
+"0",
+"1/(m²(m + 1))"
+],
+[
+"0",
+"1",
+"1/(m²(m + 1))"
+]
+]
+}
+],
+"echelon": [
+[
+"1",
+"−1",
+"0"
+],
+[
+"0",
+"m²(m + 1)",
+"1"
+]
+],
+"canonical": [
+[
+"1",
+"0",
+"1/(m²(m + 1))"
+],
+[
+"0",
+"1",
+"1/(m²(m + 1))"
+]
+],
+"pivots": [
+[
+0,
+0
+],
+[
+1,
+1
+]
+],
+"rank": 2,
+"special": {
+"origins": [
+[
+"m²(m + 1)",
+"leading entry of L₂ in the echelon form"
+]
+],
+"values": [
+"−1",
+"0"
+],
+"unsolved": [],
+"undefined": []
+},
+"generic": {
+"condition": "m ∉ {−1, 0}",
+"solution": {
+"status": "unique",
+"values": [
+"1/(m²(m + 1))",
+"1/(m²(m + 1))"
+],
+"free": [],
+"params": [],
+"set": "S = {(1/(m²(m + 1)), 1/(m²(m + 1)))}",
+"example": null,
+"ok": true
+}
+},
+"cases": [
+{
+"value": "−1",
+"same_as_generic": false,
+"input": [
+[
+"1",
+"−1",
+"1"
+],
+[
+"1",
+"−1",
+"0"
+]
+],
+"steps": [
+{
+"phase": 1,
+"pivot": [
+0,
+0
+],
+"ops": [
+{
+"kind": "add",
+"target": 1,
+"source": 0,
+"factor": "−1",
+"label": "L₂ → L₂ − L₁"
+}
+],
+"matrix": [
+[
+"1",
+"−1",
+"1"
+],
+[
+"0",
+"0",
+"−1"
+]
+]
+},
+{
+"phase": 2,
+"pivot": null,
+"ops": [
+{
+"kind": "scale",
+"target": 1,
+"factor": "−1",
+"label": "L₂ → −L₂"
+}
+],
+"matrix": [
+[
+"1",
+"−1",
+"1"
+],
+[
+"0",
+"0",
+"1"
+]
+]
+},
+{
+"phase": 2,
+"pivot": [
+1,
+2
+],
+"ops": [
+{
+"kind": "add",
+"target": 0,
+"source": 1,
+"factor": "−1",
+"label": "L₁ → L₁ − L₂"
+}
+],
+"matrix": [
+[
+"1",
+"−1",
+"0"
+],
+[
+"0",
+"0",
+"1"
+]
+]
+}
+],
+"echelon": [
+[
+"1",
+"−1",
+"1"
+],
+[
+"0",
+"0",
+"−1"
+]
+],
+"canonical": [
+[
+"1",
+"−1",
+"0"
+],
+[
+"0",
+"0",
+"1"
+]
+],
+"pivots": [
+[
+0,
+0
+],
+[
+1,
+2
+]
+],
+"rank": 2,
+"solution": {
+"status": "none",
+"row": [
+"0",
+"0",
+"−1"
+],
+"rhs": "−1"
+}
+},
+{
+"value": "0",
+"same_as_generic": false,
+"input": [
+[
+"0",
+"0",
+"1"
+],
+[
+"1",
+"−1",
+"0"
+]
+],
+"steps": [
+{
+"phase": 1,
+"pivot": [
+0,
+0
+],
+"ops": [
+{
+"kind": "swap",
+"rows": [
+0,
+1
+],
+"label": "L₁ ↔ L₂"
+}
+],
+"matrix": [
+[
+"1",
+"−1",
+"0"
+],
+[
+"0",
+"0",
+"1"
+]
+]
+}
+],
+"echelon": [
+[
+"1",
+"−1",
+"0"
+],
+[
+"0",
+"0",
+"1"
+]
+],
+"canonical": [
+[
+"1",
+"−1",
+"0"
+],
+[
+"0",
+"0",
+"1"
+]
+],
+"pivots": [
+[
+0,
+0
+],
+[
+1,
+2
+]
+],
+"rank": 2,
+"solution": {
+"status": "none",
+"row": [
+"0",
+"0",
+"1"
+],
+"rhs": "1"
+}
+}
+]
+}
+},
+{
+"text": "m^2(m+1)^2 1 | 1; 1 1 | 2",
+"system": false,
+"expect": {
+"input": [
+[
+"m²(m + 1)²",
+"1",
+"1"
+],
+[
+"1",
+"1",
+"2"
+]
+],
+"bar": 2,
+"names": [
+"x₁",
+"x₂"
+],
+"field": "ℝ",
+"rows": 2,
+"cols": 3,
+"parameter": "m",
+"steps": [
+{
+"phase": 1,
+"pivot": [
+0,
+0
+],
+"ops": [
+{
+"kind": "swap",
+"rows": [
+0,
+1
+],
+"label": "L₁ ↔ L₂"
+}
+],
+"matrix": [
+[
+"1",
+"1",
+"2"
+],
+[
+"m²(m + 1)²",
+"1",
+"1"
+]
+]
+},
+{
+"phase": 1,
+"pivot": [
+0,
+0
+],
+"ops": [
+{
+"kind": "add",
+"target": 1,
+"source": 0,
+"factor": "−m²(m + 1)²",
+"label": "L₂ → L₂ − (m²(m + 1)²)·L₁"
+}
+],
+"matrix": [
+[
+"1",
+"1",
+"2"
+],
+[
+"0",
+"−(m² + m − 1)(m² + m + 1)",
+"−2m⁴ − 4m³ − 2m² + 1"
+]
+]
+},
+{
+"phase": 2,
+"pivot": null,
+"ops": [
+{
+"kind": "scale",
+"target": 1,
+"factor": "−1/((m² + m − 1)(m² + m + 1))",
+"label": "L₂ → (−1/((m² + m − 1)(m² + m + 1)))·L₂"
+}
+],
+"matrix": [
+[
+"1",
+"1",
+"2"
+],
+[
+"0",
+"1",
+"(2m⁴ + 4m³ + 2m² − 1)/((m² + m − 1)(m² + m + 1))"
+]
+]
+},
+{
+"phase": 2,
+"pivot": [
+1,
+1
+],
+"ops": [
+{
+"kind": "add",
+"target": 0,
+"source": 1,
+"factor": "−1",
+"label": "L₁ → L₁ − L₂"
+}
+],
+"matrix": [
+[
+"1",
+"0",
+"−1/((m² + m − 1)(m² + m + 1))"
+],
+[
+"0",
+"1",
+"(2m⁴ + 4m³ + 2m² − 1)/((m² + m − 1)(m² + m + 1))"
+]
+]
+}
+],
+"echelon": [
+[
+"1",
+"1",
+"2"
+],
+[
+"0",
+"−(m² + m − 1)(m² + m + 1)",
+"−2m⁴ − 4m³ − 2m² + 1"
+]
+],
+"canonical": [
+[
+"1",
+"0",
+"−1/((m² + m − 1)(m² + m + 1))"
+],
+[
+"0",
+"1",
+"(2m⁴ + 4m³ + 2m² − 1)/((m² + m − 1)(m² + m + 1))"
+]
+],
+"pivots": [
+[
+0,
+0
+],
+[
+1,
+1
+]
+],
+"rank": 2,
+"special": {
+"origins": [
+[
+"−(m² + m − 1)(m² + m + 1)",
+"leading entry of L₂ in the echelon form"
+]
+],
+"values": [],
+"unsolved": [
+"m² + m − 1"
+],
+"undefined": []
+},
+"generic": {
+"condition": "m² + m − 1 ≠ 0",
+"solution": {
+"status": "unique",
+"values": [
+"−1/((m² + m − 1)(m² + m + 1))",
+"(2m⁴ + 4m³ + 2m² − 1)/((m² + m − 1)(m² + m + 1))"
+],
+"free": [],
+"params": [],
+"set": "S = {(−1/((m² + m − 1)(m² + m + 1)), (2m⁴ + 4m³ + 2m² − 1)/((m² + m − 1)(m² + m + 1)))}",
+"example": null,
+"ok": true
+}
+},
+"cases": []
+}
+},
+{
+"text": "(1+m^2)^3 1 | 1; 1 m | 2",
+"system": false,
+"expect": {
+"input": [
+[
+"(m² + 1)³",
+"1",
+"1"
+],
+[
+"1",
+"m",
+"2"
+]
+],
+"bar": 2,
+"names": [
+"x₁",
+"x₂"
+],
+"field": "ℝ",
+"rows": 2,
+"cols": 3,
+"parameter": "m",
+"steps": [
+{
+"phase": 1,
+"pivot": [
+0,
+0
+],
+"ops": [
+{
+"kind": "swap",
+"rows": [
+0,
+1
+],
+"label": "L₁ ↔ L₂"
+}
+],
+"matrix": [
+[
+"1",
+"m",
+"2"
+],
+[
+"(m² + 1)³",
+"1",
+"1"
+]
+]
+},
+{
+"phase": 1,
+"pivot": [
+0,
+0
+],
+"ops": [
+{
+"kind": "add",
+"target": 1,
+"source": 0,
+"factor": "−(m² + 1)³",
+"label": "L₂ → L₂ − ((m² + 1)³)·L₁"
+}
+],
+"matrix": [
+[
+"1",
+"m",
+"2"
+],
+[
+"0",
+"−m⁷ − 3m⁵ − 3m³ − m + 1",
+"−(2m⁶ + 6m⁴ + 6m² + 1)"
+]
+]
+},
+{
+"phase": 2,
+"pivot": null,
+"ops": [
+{
+"kind": "scale",
+"target": 1,
+"factor": "−1/(m⁷ + 3m⁵ + 3m³ + m − 1)",
+"label": "L₂ → (−1/(m⁷ + 3m⁵ + 3m³ + m − 1))·L₂"
+}
+],
+"matrix": [
+[
+"1",
+"m",
+"2"
+],
+[
+"0",
+"1",
+"(2m⁶ + 6m⁴ + 6m² + 1)/(m⁷ + 3m⁵ + 3m³ + m − 1)"
+]
+]
+},
+{
+"phase": 2,
+"pivot": [
+1,
+1
+],
+"ops": [
+{
+"kind": "add",
+"target": 0,
+"source": 1,
+"factor": "−m",
+"label": "L₁ → L₁ − m·L₂"
+}
+],
+"matrix": [
+[
+"1",
+"0",
+"(m − 2)/(m⁷ + 3m⁵ + 3m³ + m − 1)"
+],
+[
+"0",
+"1",
+"(2m⁶ + 6m⁴ + 6m² + 1)/(m⁷ + 3m⁵ + 3m³ + m − 1)"
+]
+]
+}
+],
+"echelon": [
+[
+"1",
+"m",
+"2"
+],
+[
+"0",
+"−m⁷ − 3m⁵ − 3m³ − m + 1",
+"−(2m⁶ + 6m⁴ + 6m² + 1)"
+]
+],
+"canonical": [
+[
+"1",
+"0",
+"(m − 2)/(m⁷ + 3m⁵ + 3m³ + m − 1)"
+],
+[
+"0",
+"1",
+"(2m⁶ + 6m⁴ + 6m² + 1)/(m⁷ + 3m⁵ + 3m³ + m − 1)"
+]
+],
+"pivots": [
+[
+0,
+0
+],
+[
+1,
+1
+]
+],
+"rank": 2,
+"special": {
+"origins": [
+[
+"−m⁷ − 3m⁵ − 3m³ − m + 1",
+"leading entry of L₂ in the echelon form"
+]
+],
+"values": [],
+"unsolved": [
+"m⁷ + 3m⁵ + 3m³ + m − 1"
+],
+"undefined": []
+},
+"generic": {
+"condition": "m⁷ + 3m⁵ + 3m³ + m − 1 ≠ 0",
+"solution": {
+"status": "unique",
+"values": [
+"(m − 2)/(m⁷ + 3m⁵ + 3m³ + m − 1)",
+"(2m⁶ + 6m⁴ + 6m² + 1)/(m⁷ + 3m⁵ + 3m³ + m − 1)"
+],
+"free": [],
+"params": [],
+"set": "S = {((m − 2)/(m⁷ + 3m⁵ + 3m³ + m − 1), (2m⁶ + 6m⁴ + 6m² + 1)/(m⁷ + 3m⁵ + 3m³ + m − 1))}",
+"example": null,
+"ok": true
+}
+},
+"cases": []
+}
+},
+{
+"text": "m-1 0 | 1; 0 m^2-2 | 1",
+"system": false,
+"expect": {
+"input": [
+[
+"m − 1",
+"0",
+"1"
+],
+[
+"0",
+"m² − 2",
+"1"
+]
+],
+"bar": 2,
+"names": [
+"x₁",
+"x₂"
+],
+"field": "ℝ",
+"rows": 2,
+"cols": 3,
+"parameter": "m",
+"steps": [
+{
+"phase": 2,
+"pivot": null,
+"ops": [
+{
+"kind": "scale",
+"target": 0,
+"factor": "1/(m − 1)",
+"label": "L₁ → (1/(m − 1))·L₁"
+},
+{
+"kind": "scale",
+"target": 1,
+"factor": "1/(m² − 2)",
+"label": "L₂ → (1/(m² − 2))·L₂"
+}
+],
+"matrix": [
+[
+"1",
+"0",
+"1/(m − 1)"
+],
+[
+"0",
+"1",
+"1/(m² − 2)"
+]
+]
+}
+],
+"echelon": [
+[
+"m − 1",
+"0",
+"1"
+],
+[
+"0",
+"m² − 2",
+"1"
+]
+],
+"canonical": [
+[
+"1",
+"0",
+"1/(m − 1)"
+],
+[
+"0",
+"1",
+"1/(m² − 2)"
+]
+],
+"pivots": [
+[
+0,
+0
+],
+[
+1,
+1
+]
+],
+"rank": 2,
+"special": {
+"origins": [
+[
+"m − 1",
+"leading entry of L₁ in the echelon form"
+],
+[
+"m² − 2",
+"leading entry of L₂ in the echelon form"
+]
+],
+"values": [
+"1"
+],
+"unsolved": [
+"m² − 2"
+],
+"undefined": []
+},
+"generic": {
+"condition": "m ∉ {1} and m² − 2 ≠ 0",
+"solution": {
+"status": "unique",
+"values": [
+"1/(m − 1)",
+"1/(m² − 2)"
+],
+"free": [],
+"params": [],
+"set": "S = {(1/(m − 1), 1/(m² − 2))}",
+"example": null,
+"ok": true
+}
+},
+"cases": [
+{
+"value": "1",
+"same_as_generic": false,
+"input": [
+[
+"0",
+"0",
+"1"
+],
+[
+"0",
+"−1",
+"1"
+]
+],
+"steps": [
+{
+"phase": 1,
+"pivot": [
+0,
+1
+],
+"ops": [
+{
+"kind": "swap",
+"rows": [
+0,
+1
+],
+"label": "L₁ ↔ L₂"
+}
+],
+"matrix": [
+[
+"0",
+"−1",
+"1"
+],
+[
+"0",
+"0",
+"1"
+]
+]
+},
+{
+"phase": 2,
+"pivot": null,
+"ops": [
+{
+"kind": "scale",
+"target": 0,
+"factor": "−1",
+"label": "L₁ → −L₁"
+}
+],
+"matrix": [
+[
+"0",
+"1",
+"−1"
+],
+[
+"0",
+"0",
+"1"
+]
+]
+},
+{
+"phase": 2,
+"pivot": [
+1,
+2
+],
+"ops": [
+{
+"kind": "add",
+"target": 0,
+"source": 1,
+"factor": "1",
+"label": "L₁ → L₁ + L₂"
+}
+],
+"matrix": [
+[
+"0",
+"1",
+"0"
+],
+[
+"0",
+"0",
+"1"
+]
+]
+}
+],
+"echelon": [
+[
+"0",
+"−1",
+"1"
+],
+[
+"0",
+"0",
+"1"
+]
+],
+"canonical": [
+[
+"0",
+"1",
+"0"
+],
+[
+"0",
+"0",
+"1"
+]
+],
+"pivots": [
+[
+0,
+1
+],
+[
+1,
+2
+]
+],
+"rank": 2,
+"solution": {
+"status": "none",
+"row": [
+"0",
+"0",
+"1"
+],
+"rhs": "1"
+}
+}
+]
+}
+},
+{
+"text": "m 1 | 1; -1 m | 0",
+"system": false,
+"expect": {
+"input": [
+[
+"m",
+"1",
+"1"
+],
+[
+"−1",
+"m",
+"0"
+]
+],
+"bar": 2,
+"names": [
+"x₁",
+"x₂"
+],
+"field": "ℝ",
+"rows": 2,
+"cols": 3,
+"parameter": "m",
+"steps": [
+{
+"phase": 1,
+"pivot": [
+0,
+0
+],
+"ops": [
+{
+"kind": "swap",
+"rows": [
+0,
+1
+],
+"label": "L₁ ↔ L₂"
+}
+],
+"matrix": [
+[
+"−1",
+"m",
+"0"
+],
+[
+"m",
+"1",
+"1"
+]
+]
+},
+{
+"phase": 1,
+"pivot": [
+0,
+0
+],
+"ops": [
+{
+"kind": "add",
+"target": 1,
+"source": 0,
+"factor": "m",
+"label": "L₂ → L₂ + m·L₁"
+}
+],
+"matrix": [
+[
+"−1",
+"m",
+"0"
+],
+[
+"0",
+"m² + 1",
+"1"
+]
+]
+},
+{
+"phase": 2,
+"pivot": null,
+"ops": [
+{
+"kind": "scale",
+"target": 0,
+"factor": "−1",
+"label": "L₁ → −L₁"
+},
+{
+"kind": "scale",
+"target": 1,
+"factor": "1/(m² + 1)",
+"label": "L₂ → (1/(m² + 1))·L₂"
+}
+],
+"matrix": [
+[
+"1",
+"−m",
+"0"
+],
+[
+"0",
+"1",
+"1/(m² + 1)"
+]
+]
+},
+{
+"phase": 2,
+"pivot": [
+1,
+1
+],
+"ops": [
+{
+"kind": "add",
+"target": 0,
+"source": 1,
+"factor": "m",
+"label": "L₁ → L₁ + m·L₂"
+}
+],
+"matrix": [
+[
+"1",
+"0",
+"m/(m² + 1)"
+],
+[
+"0",
+"1",
+"1/(m² + 1)"
+]
+]
+}
+],
+"echelon": [
+[
+"−1",
+"m",
+"0"
+],
+[
+"0",
+"m² + 1",
+"1"
+]
+],
+"canonical": [
+[
+"1",
+"0",
+"m/(m² + 1)"
+],
+[
+"0",
+"1",
+"1/(m² + 1)"
+]
+],
+"pivots": [
+[
+0,
+0
+],
+[
+1,
+1
+]
+],
+"rank": 2,
+"special": {
+"origins": [
+[
+"m² + 1",
+"leading entry of L₂ in the echelon form"
+]
+],
+"values": [],
+"unsolved": [],
+"undefined": []
+},
+"generic": {
+"condition": "every m",
+"solution": {
+"status": "unique",
+"values": [
+"m/(m² + 1)",
+"1/(m² + 1)"
+],
+"free": [],
+"params": [],
+"set": "S = {(m/(m² + 1), 1/(m² + 1))}",
+"example": null,
+"ok": true
+}
+},
+"cases": []
+}
+},
+{
+"text": "m 2; 1 m",
+"system": false,
+"expect": {
+"input": [
+[
+"m",
+"2"
+],
+[
+"1",
+"m"
+]
+],
+"bar": null,
+"names": [],
+"field": "ℝ",
+"rows": 2,
+"cols": 2,
+"parameter": "m",
+"steps": [
+{
+"phase": 1,
+"pivot": [
+0,
+0
+],
+"ops": [
+{
+"kind": "swap",
+"rows": [
+0,
+1
+],
+"label": "L₁ ↔ L₂"
+}
+],
+"matrix": [
+[
+"1",
+"m"
+],
+[
+"m",
+"2"
+]
+]
+},
+{
+"phase": 1,
+"pivot": [
+0,
+0
+],
+"ops": [
+{
+"kind": "add",
+"target": 1,
+"source": 0,
+"factor": "−m",
+"label": "L₂ → L₂ − m·L₁"
+}
+],
+"matrix": [
+[
+"1",
+"m"
+],
+[
+"0",
+"2 − m²"
+]
+]
+},
+{
+"phase": 2,
+"pivot": null,
+"ops": [
+{
+"kind": "scale",
+"target": 1,
+"factor": "1/(2 − m²)",
+"label": "L₂ → (1/(2 − m²))·L₂"
+}
+],
+"matrix": [
+[
+"1",
+"m"
+],
+[
+"0",
+"1"
+]
+]
+},
+{
+"phase": 2,
+"pivot": [
+1,
+1
+],
+"ops": [
+{
+"kind": "add",
+"target": 0,
+"source": 1,
+"factor": "−m",
+"label": "L₁ → L₁ − m·L₂"
+}
+],
+"matrix": [
+[
+"1",
+"0"
+],
+[
+"0",
+"1"
+]
+]
+}
+],
+"echelon": [
+[
+"1",
+"m"
+],
+[
+"0",
+"2 − m²"
+]
+],
+"canonical": [
+[
+"1",
+"0"
+],
+[
+"0",
+"1"
+]
+],
+"pivots": [
+[
+0,
+0
+],
+[
+1,
+1
+]
+],
+"rank": 2,
+"special": {
+"origins": [
+[
+"2 − m²",
+"leading entry of L₂ in the echelon form"
+]
+],
+"values": [],
+"unsolved": [
+"m² − 2"
+],
+"undefined": []
+},
+"generic": {
+"condition": "m² − 2 ≠ 0",
+"solution": null
+},
+"cases": []
+}
+},
+{
+"text": "2-m, 1, 1 | 1; 1, 2-m, 1 | 1; 1, 1, 2-m | 1",
+"system": false,
+"expect": {
+"input": [
+[
+"2 − m",
+"1",
+"1",
+"1"
+],
+[
+"1",
+"2 − m",
+"1",
+"1"
+],
+[
+"1",
+"1",
+"2 − m",
+"1"
+]
+],
+"bar": 3,
+"names": [
+"x₁",
+"x₂",
+"x₃"
+],
+"field": "ℝ",
+"rows": 3,
+"cols": 4,
+"parameter": "m",
+"steps": [
+{
+"phase": 1,
+"pivot": [
+0,
+0
+],
+"ops": [
+{
+"kind": "swap",
+"rows": [
+0,
+1
+],
+"label": "L₁ ↔ L₂"
+}
+],
+"matrix": [
+[
+"1",
+"2 − m",
+"1",
+"1"
+],
+[
+"2 − m",
+"1",
+"1",
+"1"
+],
+[
+"1",
+"1",
+"2 − m",
+"1"
+]
+]
+},
+{
+"phase": 1,
+"pivot": [
+0,
+0
+],
+"ops": [
+{
+"kind": "add",
+"target": 1,
+"source": 0,
+"factor": "m − 2",
+"label": "L₂ → L₂ + (m − 2)·L₁"
+},
+{
+"kind": "add",
+"target": 2,
+"source": 0,
+"factor": "−1",
+"label": "L₃ → L₃ − L₁"
+}
+],
+"matrix": [
+[
+"1",
+"2 − m",
+"1",
+"1"
+],
+[
+"0",
+"(3 − m)(m − 1)",
+"m − 1",
+"m − 1"
+],
+[
+"0",
+"m − 1",
+"1 − m",
+"0"
+]
+]
+},
+{
+"phase": 1,
+"pivot": [
+1,
+1
+],
+"ops": [
+{
+"kind": "swap",
+"rows": [
+1,
+2
+],
+"label": "L₂ ↔ L₃"
+}
+],
+"matrix": [
+[
+"1",
+"2 − m",
+"1",
+"1"
+],
+[
+"0",
+"m − 1",
+"1 − m",
+"0"
+],
+[
+"0",
+"(3 − m)(m − 1)",
+"m − 1",
+"m − 1"
+]
+]
+},
+{
+"phase": 1,
+"pivot": [
+1,
+1
+],
+"ops": [
+{
+"kind": "add",
+"target": 2,
+"source": 1,
+"factor": "m − 3",
+"label": "L₃ → L₃ + (m − 3)·L₂"
+}
+],
+"matrix": [
+[
+"1",
+"2 − m",
+"1",
+"1"
+],
+[
+"0",
+"m − 1",
+"1 − m",
+"0"
+],
+[
+"0",
+"0",
+"(4 − m)(m − 1)",
+"m − 1"
+]
+]
+},
+{
+"phase": 2,
+"pivot": null,
+"ops": [
+{
+"kind": "scale",
+"target": 1,
+"factor": "1/(m − 1)",
+"label": "L₂ → (1/(m − 1))·L₂"
+},
+{
+"kind": "scale",
+"target": 2,
+"factor": "1/((4 − m)(m − 1))",
+"label": "L₃ → (1/((4 − m)(m − 1)))·L₃"
+}
+],
+"matrix": [
+[
+"1",
+"2 − m",
+"1",
+"1"
+],
+[
+"0",
+"1",
+"−1",
+"0"
+],
+[
+"0",
+"0",
+"1",
+"1/(4 − m)"
+]
+]
+},
+{
+"phase": 2,
+"pivot": [
+2,
+2
+],
+"ops": [
+{
+"kind": "add",
+"target": 0,
+"source": 2,
+"factor": "−1",
+"label": "L₁ → L₁ − L₃"
+},
+{
+"kind": "add",
+"target": 1,
+"source": 2,
+"factor": "1",
+"label": "L₂ → L₂ + L₃"
+}
+],
+"matrix": [
+[
+"1",
+"2 − m",
+"0",
+"(m − 3)/(m − 4)"
+],
+[
+"0",
+"1",
+"0",
+"1/(4 − m)"
+],
+[
+"0",
+"0",
+"1",
+"1/(4 − m)"
+]
+]
+},
+{
+"phase": 2,
+"pivot": [
+1,
+1
+],
+"ops": [
+{
+"kind": "add",
+"target": 0,
+"source": 1,
+"factor": "m − 2",
+"label": "L₁ → L₁ + (m − 2)·L₂"
+}
+],
+"matrix": [
+[
+"1",
+"0",
+"0",
+"1/(4 − m)"
+],
+[
+"0",
+"1",
+"0",
+"1/(4 − m)"
+],
+[
+"0",
+"0",
+"1",
+"1/(4 − m)"
+]
+]
+}
+],
+"echelon": [
+[
+"1",
+"2 − m",
+"1",
+"1"
+],
+[
+"0",
+"m − 1",
+"1 − m",
+"0"
+],
+[
+"0",
+"0",
+"(4 − m)(m − 1)",
+"m − 1"
+]
+],
+"canonical": [
+[
+"1",
+"0",
+"0",
+"1/(4 − m)"
+],
+[
+"0",
+"1",
+"0",
+"1/(4 − m)"
+],
+[
+"0",
+"0",
+"1",
+"1/(4 − m)"
+]
+],
+"pivots": [
+[
+0,
+0
+],
+[
+1,
+1
+],
+[
+2,
+2
+]
+],
+"rank": 3,
+"special": {
+"origins": [
+[
+"m − 1",
+"leading entry of L₂ in the echelon form"
+],
+[
+"(4 − m)(m − 1)",
+"leading entry of L₃ in the echelon form"
+]
+],
+"values": [
+"1",
+"4"
+],
+"unsolved": [],
+"undefined": []
+},
+"generic": {
+"condition": "m ∉ {1, 4}",
+"solution": {
+"status": "unique",
+"values": [
+"1/(4 − m)",
+"1/(4 − m)",
+"1/(4 − m)"
+],
+"free": [],
+"params": [],
+"set": "S = {(1/(4 − m), 1/(4 − m), 1/(4 − m))}",
+"example": null,
+"ok": true
+}
+},
+"cases": [
+{
+"value": "1",
+"same_as_generic": false,
+"input": [
+[
+"1",
+"1",
+"1",
+"1"
+],
+[
+"1",
+"1",
+"1",
+"1"
+],
+[
+"1",
+"1",
+"1",
+"1"
+]
+],
+"steps": [
+{
+"phase": 1,
+"pivot": [
+0,
+0
+],
+"ops": [
+{
+"kind": "add",
+"target": 1,
+"source": 0,
+"factor": "−1",
+"label": "L₂ → L₂ − L₁"
+},
+{
+"kind": "add",
+"target": 2,
+"source": 0,
+"factor": "−1",
+"label": "L₃ → L₃ − L₁"
+}
+],
+"matrix": [
+[
+"1",
+"1",
+"1",
+"1"
+],
+[
+"0",
+"0",
+"0",
+"0"
+],
+[
+"0",
+"0",
+"0",
+"0"
+]
+]
+}
+],
+"echelon": [
+[
+"1",
+"1",
+"1",
+"1"
+],
+[
+"0",
+"0",
+"0",
+"0"
+],
+[
+"0",
+"0",
+"0",
+"0"
+]
+],
+"canonical": [
+[
+"1",
+"1",
+"1",
+"1"
+],
+[
+"0",
+"0",
+"0",
+"0"
+],
+[
+"0",
+"0",
+"0",
+"0"
+]
+],
+"pivots": [
+[
+0,
+0
+]
+],
+"rank": 1,
+"solution": {
+"status": "infinite",
+"values": [
+"1 − α − β",
+"α",
+"β"
+],
+"free": [
+"x₂",
+"x₃"
+],
+"params": [
+"α",
+"β"
+],
+"set": "S = {(1 − α − β, α, β) | α, β ∈ ℝ}",
+"example": [
+"1",
+"0",
+"0"
+],
+"ok": true
+}
+},
+{
+"value": "4",
+"same_as_generic": false,
+"input": [
+[
+"−2",
+"1",
+"1",
+"1"
+],
+[
+"1",
+"−2",
+"1",
+"1"
+],
+[
+"1",
+"1",
+"−2",
+"1"
+]
+],
+"steps": [
+{
+"phase": 1,
+"pivot": [
+0,
+0
+],
+"ops": [
+{
+"kind": "swap",
+"rows": [
+0,
+1
+],
+"label": "L₁ ↔ L₂"
+}
+],
+"matrix": [
+[
+"1",
+"−2",
+"1",
+"1"
+],
+[
+"−2",
+"1",
+"1",
+"1"
+],
+[
+"1",
+"1",
+"−2",
+"1"
+]
+]
+},
+{
+"phase": 1,
+"pivot": [
+0,
+0
+],
+"ops": [
+{
+"kind": "add",
+"target": 1,
+"source": 0,
+"factor": "2",
+"label": "L₂ → L₂ + 2·L₁"
+},
+{
+"kind": "add",
+"target": 2,
+"source": 0,
+"factor": "−1",
+"label": "L₃ → L₃ − L₁"
+}
+],
+"matrix": [
+[
+"1",
+"−2",
+"1",
+"1"
+],
+[
+"0",
+"−3",
+"3",
+"3"
+],
+[
+"0",
+"3",
+"−3",
+"0"
+]
+]
+},
+{
+"phase": 1,
+"pivot": [
+1,
+1
+],
+"ops": [
+{
+"kind": "add",
+"target": 2,
+"source": 1,
+"factor": "1",
+"label": "L₃ → L₃ + L₂"
+}
+],
+"matrix": [
+[
+"1",
+"−2",
+"1",
+"1"
+],
+[
+"0",
+"−3",
+"3",
+"3"
+],
+[
+"0",
+"0",
+"0",
+"3"
+]
+]
+},
+{
+"phase": 2,
+"pivot": null,
+"ops": [
+{
+"kind": "scale",
+"target": 1,
+"factor": "−1/3",
+"label": "L₂ → (−1/3)·L₂"
+},
+{
+"kind": "scale",
+"target": 2,
+"factor": "1/3",
+"label": "L₃ → (1/3)·L₃"
+}
+],
+"matrix": [
+[
+"1",
+"−2",
+"1",
+"1"
+],
+[
+"0",
+"1",
+"−1",
+"−1"
+],
+[
+"0",
+"0",
+"0",
+"1"
+]
+]
+},
+{
+"phase": 2,
+"pivot": [
+2,
+3
+],
+"ops": [
+{
+"kind": "add",
+"target": 0,
+"source": 2,
+"factor": "−1",
+"label": "L₁ → L₁ − L₃"
+},
+{
+"kind": "add",
+"target": 1,
+"source": 2,
+"factor": "1",
+"label": "L₂ → L₂ + L₃"
+}
+],
+"matrix": [
+[
+"1",
+"−2",
+"1",
+"0"
+],
+[
+"0",
+"1",
+"−1",
+"0"
+],
+[
+"0",
+"0",
+"0",
+"1"
+]
+]
+},
+{
+"phase": 2,
+"pivot": [
+1,
+1
+],
+"ops": [
+{
+"kind": "add",
+"target": 0,
+"source": 1,
+"factor": "2",
+"label": "L₁ → L₁ + 2·L₂"
+}
+],
+"matrix": [
+[
+"1",
+"0",
+"−1",
+"0"
+],
+[
+"0",
+"1",
+"−1",
+"0"
+],
+[
+"0",
+"0",
+"0",
+"1"
+]
+]
+}
+],
+"echelon": [
+[
+"1",
+"−2",
+"1",
+"1"
+],
+[
+"0",
+"−3",
+"3",
+"3"
+],
+[
+"0",
+"0",
+"0",
+"3"
+]
+],
+"canonical": [
+[
+"1",
+"0",
+"−1",
+"0"
+],
+[
+"0",
+"1",
+"−1",
+"0"
+],
+[
+"0",
+"0",
+"0",
+"1"
+]
+],
+"pivots": [
+[
+0,
+0
+],
+[
+1,
+1
+],
+[
+2,
+3
+]
+],
+"rank": 3,
+"solution": {
+"status": "none",
+"row": [
+"0",
+"0",
+"0",
+"3"
+],
+"rhs": "3"
+}
+}
+]
+}
+},
+{
+"text": "m^9 ^ 9, 1 | 1; 1, 1 | 2",
+"system": false,
+"error": "powers may have at most a two-digit exponent and cannot be chained"
+},
+{
+"text": "2^(3^4) | 1",
+"system": false,
+"error": "powers may have at most a two-digit exponent and cannot be chained"
+},
+{
+"text": "2^(9)^9 | 1",
+"system": false,
+"error": "powers may have at most a two-digit exponent and cannot be chained"
+},
+{
+"text": "(m^99)^99 | 1",
+"system": false,
+"error": "powers may have at most a two-digit exponent and cannot be chained"
 },
 {
 "text": "m i | 1; 1 m | 0",

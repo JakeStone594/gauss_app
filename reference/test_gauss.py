@@ -167,11 +167,22 @@ def main():
     rows, bar, names, psym = gauss.parse_input("1 m; m 1", param="auto")               # a matrix, not a system
     P = gauss.parametric(rows, bar, psym)
     expect(P["values"] == [-1, 1] and P["generic"] is None and len(P["red"].pivots) == 2, "param: rank of a plain matrix")
+    expect([len(c["red"].pivots) for c in P["cases"]] == [1, 1], "param: rank of a plain matrix at m = ±1")
 
     rows, bar, names, psym = gauss.parse_input("m 2 | 1; 1 m | 0", param="auto")
     P = gauss.parametric(rows, bar, psym)
     expect(P["values"] == [] and P["unsolved"] == ["m² − 2"] and P["cases"] == [],
            f"param: a factor without rational roots is reported, not solved — got {P['values']} {P['unsolved']}")
+    expect(gauss.generic_condition(P) == "m² − 2 ≠ 0",
+           f"param: the generic case excludes the irrational roots — got {gauss.generic_condition(P)!r}")
+    rows, bar, names, psym = gauss.parse_input("m-1 0 | 1; 0 m^2-2 | 1", param="auto")
+    P = gauss.parametric(rows, bar, psym)
+    expect(gauss.generic_condition(P) == "m ∉ {1} and m² − 2 ≠ 0",
+           f"param: rational and irrational special values together — got {gauss.generic_condition(P)!r}")
+    rows, bar, names, psym = gauss.parse_input("m 1 | 1; -1 m | 0", param="auto")   # m² + 1: no real root
+    P = gauss.parametric(rows, bar, psym)
+    expect(P["unsolved"] == [] and gauss.generic_condition(P) == "every m",
+           f"param: a factor with no real root is no case — got {P['unsolved']} {gauss.generic_condition(P)!r}")
     for bad in ("m i | 1; 1 m | 0", "mx + iy = 1"):
         try:
             gauss.parse_input(bad, param="m" if "=" in bad else "auto")

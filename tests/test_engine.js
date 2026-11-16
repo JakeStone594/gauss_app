@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 'use strict';
-/* Check web/engine.js against tests/golden.json — the Python engine's own output for 388
-   inputs. A solved case must match string for string (every step label, every matrix entry,
+/* Check web/engine.js against tests/golden.json — the Python engine's own output for
+   every input in tools/golden.py. A solved case must match string for string (every step label, every matrix entry,
    the solution set); a rejected case must be rejected. The CLI-style `text` field is not
    compared (its layout is allowed to differ).
 

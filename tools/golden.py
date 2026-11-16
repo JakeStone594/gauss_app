@@ -67,7 +67,13 @@ CASES = [
     ("x/m + y = 1; x = 2", False, "m"), ("mx + y = 1; x + my = 1", False, "m"), ("k x + y = 2; x - y = k", False, "k"),
     ("x + my = 1; mx + y = 1; x + y = 2", False, "m"), ("x + y = m", False, "m"), ("m*x + y = 1; x - y = 0", False, "m"),
     ("(m+1)x - 2y = m^2 - 1; x + y = 2", False, "m"), ("x + 2y + mz = 1; 2x + my + z = m", False, "m"),
+    # powers side by side are ordinary entries, not a chain
+    "m^3-m^2, 1 | 1; 1, m | 2", "(m^2-1)/(m^2+1), 1 | 1; 1, 1 | 2", ("m^2x+m^3y=1; x-y=0", False, "m"),
+    "m^2(m+1)^2 1 | 1; 1 1 | 2", "(1+m^2)^3 1 | 1; 1 m | 2",
+    # irrational special values are named in the generic condition; a factor with no real root is no case
+    "m-1 0 | 1; 0 m^2-2 | 1", "m 1 | 1; -1 m | 0", "m 2; 1 m", "2-m, 1, 1 | 1; 1, 2-m, 1 | 1; 1, 1, 2-m | 1",
     # ─ rejected by the Python engine ─
+    "m^9 ^ 9, 1 | 1; 1, 1 | 2", "2^(3^4) | 1", "2^(9)^9 | 1", "(m^99)^99 | 1",
     "m i | 1; 1 m | 0", ("mx + iy = 1", False, "m"), "m k | 1",
     "mx + y = 1", "x^2 = 1", "x*y = 1", "xy = 1; x + y = 2", "abc = 1", "x = 1 = 2", "x + = 1", "= 1",
     "1 2 | 3 | 4", "1 2; 3", "1 'a' | 2", "9^9^9^9 1 | 2", "2^123 | 1", "", "   ", "1 + | 2", "+ 1 | 2",

@@ -47,8 +47,16 @@ MAX_BODY = 20_000       # bytes of request
 # Every character an entry or an equation may contain. The engine parses with sympy, which
 # evaluates expressions, so the server is strict about what reaches it.
 ALLOWED = re.compile(r"[0-9A-Za-z_+\-*/^().,;|=\s−·×]*")
-# Powers: at most a two-digit exponent, and never chained (9^9^9^9 would run forever).
-BIG_POWER = re.compile(r"(\^|\*\*)\s*\(?\s*-?\d{3,}|(\^|\*\*)[^,;|\s]*(\^|\*\*)")
+# Powers: at most a two-digit exponent, and never chained (9^9^9^9 would run forever). A chain is
+# a power whose exponent is itself raised to a power or holds one, or a power of a lone power —
+# not two powers side by side: m^3-m^2, (m^2-1)/(m^2+1) and m^2(m+1)^2 are ordinary entries.
+# web/engine.js in gauss_app carries the same pattern; keep the two identical.
+BIG_POWER = re.compile("|".join((
+    r"(\^|\*\*)\s*\(?\s*-?\d{3,}",                                         # a three-digit exponent
+    r"(\^|\*\*)\s*[-+−]?\s*([0-9A-Za-z_.]+|\([^()]*\))\s*(\^|\*\*)",        # 2^3^4, m^9 ^ 9, 2^(9)^9
+    r"(\^|\*\*)\s*\([^)]*(\^|\*\*)",                                       # 2^(3^4), m^(1 + 2^3)
+    r"\(\s*[-+−]?\s*[0-9A-Za-z_.]*\s*(\^|\*\*)\s*[-+−]?\s*[0-9A-Za-z_.]+\s*\)\s*(\^|\*\*)",  # (m^9)^9
+)))
 TIMEOUT = 20            # seconds a single solve may take
 
 
@@ -121,7 +129,7 @@ def analyse(text, system=False, param=None):
         "undefined": [gauss.fmt(v) for v in P["undefined"]],
     }
     out["generic"] = {
-        "condition": f"{psym} ∉ {{{', '.join(values)}}}" if values else f"every {psym}",
+        "condition": gauss.generic_condition(P),
         "solution": solution_json(P["generic"], names, bar, field) if bar is not None else None,
     }
     out["cases"] = [{"value": gauss.fmt(c["value"]), "same_as_generic": c["same_as_generic"],
