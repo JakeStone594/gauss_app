@@ -5,11 +5,12 @@
 #   tools/build-windows.sh                      → build/gauss-<version>-windows-x64.exe
 #                                                 build/gauss-<version>-linux-x64
 #   VERSION_NAME=1.3 tools/build-windows.sh
-#   NO_WINRES=1 tools/build-windows.sh          skip the icon/version resource — fully offline
+#   NO_WINRES=1 tools/build-windows.sh          skip the icon/version resource
 #
-# Needs Go (tools/setup-go.sh puts it in ~/tools/go). The build itself is offline: the launcher
-# has no dependencies. Only the Windows icon and version resource need the network, once, to
-# fetch go-winres; without it the .exe is identical except for the icon.
+# Needs Go (tools/setup-go.sh puts it in ~/tools/go). The build is offline: the launcher has no
+# dependencies, and the Windows icon + version resource is compiled with mingw's windres
+# (x86_64-w64-mingw32-windres, from binutils-mingw-w64) when it is installed; otherwise
+# go-winres is used, which needs the network once to be fetched.
 set -euo pipefail
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -27,13 +28,29 @@ cp -a "$HERE/web" "$D/web"
 cd "$D"
 echo "── windows icon + version resource"
 rm -f rsrc_windows_*.syso
+# windres (offline) first; go-winres (an installed binary, else `go run`, which fetches it) second.
+windres_resource() {
+    local v4 ico rc
+    IFS=. read -r -a parts <<< "$VN.0.0.0"            # 1.2.1 → 1,2,1,0
+    v4="${parts[0]},${parts[1]},${parts[2]},${parts[3]}"
+    convert web/icons/icon-512.png -define icon:auto-resize=256,128,64,48,32,16 gauss.ico
+    sed "s/@VERSION@/$(printf '%s.%s.%s.%s' "${parts[@]:0:4}")/" winres.manifest.in > gauss.manifest
+    sed -e "s/@V4@/$v4/" -e "s/@VN@/$VN/" winres.rc.in > gauss.rc
+    x86_64-w64-mingw32-windres --codepage=65001 -O coff -F pe-x86-64 -o rsrc_windows_amd64.syso gauss.rc
+    rm -f gauss.ico gauss.manifest gauss.rc
+}
+WINRES=""
+for c in go-winres "$HOME/go/bin/go-winres"; do command -v "$c" >/dev/null && { WINRES="$c"; break; }; done
+[[ -z "$WINRES" ]] && WINRES="go run github.com/tc-hib/go-winres@v0.3.3"
 if [[ "${NO_WINRES:-0}" == 1 ]]; then
     echo "   skipped (NO_WINRES=1)"
-elif go run github.com/tc-hib/go-winres@v0.3.3 make --in winres.json --out rsrc \
+elif command -v x86_64-w64-mingw32-windres >/dev/null && windres_resource; then
+    echo "   ok (windres)"
+elif $WINRES make --in winres.json --out rsrc \
         --product-version "$VN.0.0" --file-version "$VN.0.0" >/dev/null 2>&1; then
-    echo "   ok"
+    echo "   ok ($WINRES)"
 else
-    echo "   go-winres failed — building without an icon"
+    echo "   resource failed — building without an icon"
 fi
 
 echo "── build (offline)"

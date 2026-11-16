@@ -1,0 +1,29 @@
+// Windows resources for gauss.exe, compiled by tools/build-windows.sh with windres.
+// @V4@ and @VN@ are filled in from VERSION_NAME. Constants are written out: no windows.h needed.
+1 ICON "gauss.ico"
+1 24 "gauss.manifest"
+1 VERSIONINFO
+FILEVERSION @V4@
+PRODUCTVERSION @V4@
+FILEOS 0x40004
+FILETYPE 0x1
+BEGIN
+  BLOCK "StringFileInfo"
+  BEGIN
+    BLOCK "040904B0"
+    BEGIN
+      VALUE "CompanyName", "gauss_app"
+      VALUE "FileDescription", "Gauss - row reduction, step by step"
+      VALUE "FileVersion", "@VN@"
+      VALUE "InternalName", "gauss"
+      VALUE "LegalCopyright", "MIT licence"
+      VALUE "OriginalFilename", "gauss.exe"
+      VALUE "ProductName", "Gauss"
+      VALUE "ProductVersion", "@VN@"
+    END
+  END
+  BLOCK "VarFileInfo"
+  BEGIN
+    VALUE "Translation", 0x409, 1200
+  END
+END

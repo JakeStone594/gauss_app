@@ -64,8 +64,8 @@ app mode, so there is nothing to install on Windows 10/11 — or in the default 
 is found; it exits when the window closes. `--no-browser` only serves and prints the address.
 Nothing is sent anywhere. The executable is cross-compiled on Linux (`-trimpath -s -w`: no local
 paths or symbols inside) and is not code-signed, so SmartScreen will ask once ("More info → Run
-anyway"). `NO_WINRES=1` skips the icon/version resource, which is the only step that needs the
-network (it fetches go-winres).
+anyway"). The icon and version resource are compiled offline with mingw's `windres` when it is
+installed (`binutils-mingw-w64`); otherwise `go-winres` is fetched for it, or `NO_WINRES=1` skips it.
 
 ## The PWA
 
