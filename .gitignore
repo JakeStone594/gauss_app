@@ -14,3 +14,7 @@ __pycache__/
 *.pyc
 node_modules/
 .DS_Store
+
+# desktop build intermediates (the web app copied in for embedding, the Windows resource)
+desktop/web/
+desktop/rsrc_windows_*.syso
