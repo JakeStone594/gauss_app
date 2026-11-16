@@ -117,7 +117,7 @@ def analyse(text, system=False, param=None):
     out["special"] = {
         "origins": [[gauss.fmt(e), where] for e, where in P["origins"]],
         "values": values,
-        "unsolved": [gauss.fmt(f) for f in P["unsolved"]],
+        "unsolved": P["unsolved"],
         "undefined": [gauss.fmt(v) for v in P["undefined"]],
     }
     out["generic"] = {

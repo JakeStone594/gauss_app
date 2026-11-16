@@ -170,14 +170,26 @@ def main():
 
     rows, bar, names, psym = gauss.parse_input("m 2 | 1; 1 m | 0", param="auto")
     P = gauss.parametric(rows, bar, psym)
-    expect([gauss.fmt(v) for v in P["values"]] == ["−√2", "√2"] and all(c["res"]["status"] == "none" for c in P["cases"]),
-           "param: irrational special values are solved symbolically")
+    expect(P["values"] == [] and P["unsolved"] == ["m² − 2"] and P["cases"] == [],
+           f"param: a factor without rational roots is reported, not solved — got {P['values']} {P['unsolved']}")
+    for bad in ("m i | 1; 1 m | 0", "mx + iy = 1"):
+        try:
+            gauss.parse_input(bad, param="m" if "=" in bad else "auto")
+            fails.append(f"param: accepted complex + parameter {bad!r}")
+        except ValueError:
+            pass
+    expect(gauss._poly_text(sp.expand(-m**2 - m + 2), m) == "−m² − m + 2" and gauss._poly_text(1 - m, m) == "1 − m"
+           and gauss._poly_text(2 - m**2, m) == "2 − m²" and gauss._poly_text(-m - 1, m) == "−m − 1"
+           and gauss._poly_text(2*m + 3, m) == "2m + 3", "param: polynomial text rule")
 
     rows, bar, names, psym = gauss.parse_input("1/(m+1) 1 | 1; 1 2 | 3", param="auto")
     P = gauss.parametric(rows, bar, psym)
     expect(P["undefined"] == [-1] and -1 not in [c["value"] for c in P["cases"]], "param: undefined input value is reported, not solved")
 
-    for bad, why in (("mx + y = 1", "needs -p"), ("m k | 1", "two parameters"), ("1 m | 2", "numeric reader")):
+    rows, bar, names, psym = gauss.parse_input("E 1 | 1; 1 E | 2", param="auto")
+    expect(str(psym) == "E" and gauss.parametric(rows, bar, psym)["values"] == [-1, 1], "param: E is a parameter, not Euler's number")
+    for bad, why in (("mx + y = 1", "needs -p"), ("m k | 1", "two parameters"), ("1 m | 2", "numeric reader"),
+                     ("sqrt(2) 1 | 1", "a name, not a letter")):
         try:
             if why == "numeric reader":
                 gauss.parse_matrix(bad)
@@ -235,7 +247,7 @@ def main():
                 expect(all(sp.simplify(a - b) == 0 for a, b in zip(s["xs"], sol)), f"#{trial} values")
         n_cases += 1
 
-    print(f"lecture examples: 4 + 3 bad-input rejections + 5 output/flag checks + 16 GUI checks + 17 parameter checks;  random systems vs sympy: {n_cases}")
+    print(f"lecture examples: 4 + 3 bad-input rejections + 5 output/flag checks + 16 GUI checks + 20 parameter checks;  random systems vs sympy: {n_cases}")
     if fails:
         print(f"FAILURES: {len(fails)}")
         for f in fails[:20]:

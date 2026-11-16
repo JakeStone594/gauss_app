@@ -44,7 +44,7 @@
     <label class="switch"><input type="checkbox" id="text-s">
       <span>No <code>|</code> in the rows — treat the last column as the right-hand side</span></label>
     <p class="hint">Rows separated by <code>;</code> or new lines. Unknowns: single letters, optionally indexed (<code>x</code>, <code>t</code>, <code>x1</code>);
-      <code>i</code> is always the imaginary unit. A parameter (<code>m</code>) is refused — substitute a value to check one case.</p>
+      <code>i</code> is always the imaginary unit. For a parameter (<code>mx + y = 1</code>) put its letter in the Parameter box.</p>
   </div>
 
   <div class="actions">
@@ -54,6 +54,8 @@
     <select id="examples"><option value="">Examples…</option></select>
   </div>
   <div class="options">
+    <label class="param" title="A system with a parameter: write its letter here (needed for equations such as mx + y = 1; in the grid a letter in a cell is a parameter by itself). The generic case, the special values and every case are then worked out.">
+      Parameter <input id="param" maxlength="1" placeholder="m" autocomplete="off" spellcheck="false"></label>
     <label><input type="checkbox" id="show-steps" checked> Show steps</label>
     <label><input type="checkbox" id="practice"> Practice mode — reveal one step at a time</label>
   </div>

@@ -5,9 +5,9 @@ Every case is run through the PYTHON engine (gauss_gui.analyse — the snapshot 
 verified by its own test_gauss.py), and its full JSON output is recorded. The JS port is then
 tested by tests/test_engine.js: same input → identical steps, forms and solution, string for
 string. For inputs the Python engine rejects, only the fact of rejection is recorded; the
-wording of error messages is allowed to differ. Inputs with a parameter (a letter in a matrix
-entry, e.g. "1 m | 2") are solved by the Python engine case by case; the JS engine does not do
-that yet, so they are recorded as "parametric" and the JS engine must reject them.
+wording of error messages is allowed to differ. A case may name a parameter (for equations:
+"mx + y = 1" with param "m"); in matrix form a letter in an entry is the parameter by itself.
+Parametric results — the generic reduction, the special values, every case — are compared in full.
 
     python3 -I tools/golden.py                 uses the snapshot of the engine in reference/
     python3 -I tools/golden.py --engine DIR    uses gauss.py + gauss_gui.py from DIR instead
@@ -58,13 +58,24 @@ CASES = [
     "3(x + y) = 1; x - y = 0", "x/2 + y = 1; x = 2", "-(x - y) = 1; x + y = 3", "x1 = 2; 2x1 - x_2 = 0",
     "a + b = 1; a - b = 0", "y + x = 1; x - y = 0", "2x + 3 = y + 1; x - y = 0", "x + y = 1; 2x + 2y = 2",
     "x + y + z = 1", "2.5x - 1/2y = 0.75; x + y = 1", "(2+i)x + (1-i)y = 3; x - y = i",
+    # systems with a parameter (lecture 3, pp. 233–277) — rational special values only
+    ("mx + y + z = 1; x + my + z = m; x + y + mz = m^2", False, "m"), "m 1 1 | 1; 1 m 1 | m; 1 1 m | m^2",
+    ("2x + y - mz = 0; -3x - y + 3z = 2m; 4x + 3y + mz = 4", False, "m"), "2 1 -m | 0; -3 -1 3 | 2m; 4 3 m | 4",
+    "1 m; m 1", "m 1 1; 1 m 1; 1 1 m", "m 1 | 1; 1 1 | 2", "m 0 | m; 0 1 | 1", "2 m | 4; 1 2 | 2", "1 m | 2",
+    "m m | m; 1 1 | 1", "m^2 1 | m; 1 1 | 1", "3 m -1 | 2; m 3 1 | 0; 0 0 m-2 | m", "1 2 3 | m; 2 4 6 | 2m; 1 1 1 | 1",
+    "m 2 | 1; 1 m | 0", "1/(m+1) 1 | 1; 1 2 | 3", "m/2 1 | 1/3; 1 -m | 0", "0 m | m; m 0 | 1", "m-1 0 | 0; 0 m+2 | m-1",
+    ("x/m + y = 1; x = 2", False, "m"), ("mx + y = 1; x + my = 1", False, "m"), ("k x + y = 2; x - y = k", False, "k"),
+    ("x + my = 1; mx + y = 1; x + y = 2", False, "m"), ("x + y = m", False, "m"), ("m*x + y = 1; x - y = 0", False, "m"),
+    ("(m+1)x - 2y = m^2 - 1; x + y = 2", False, "m"), ("x + 2y + mz = 1; 2x + my + z = m", False, "m"),
     # ─ rejected by the Python engine ─
+    "m i | 1; 1 m | 0", ("mx + iy = 1", False, "m"), "m k | 1",
     "mx + y = 1", "x^2 = 1", "x*y = 1", "xy = 1; x + y = 2", "abc = 1", "x = 1 = 2", "x + = 1", "= 1",
     "1 2 | 3 | 4", "1 2; 3", "1 'a' | 2", "9^9^9^9 1 | 2", "2^123 | 1", "", "   ", "1 + | 2", "+ 1 | 2",
     "2×3 | 1", "1 m | 2", "sqrt(2) 1 | 1", "x + y", "1 2 | 3; x + y = 1", "2^(1/2) | 1", "1/0 | 1",
     "; ".join(["1 2"] * 11), "1 " * 11 + "| 1", ("5", True),
 ]
 CASES = [c if isinstance(c, tuple) else (c, False) for c in CASES]
+CASES = [(c[0], c[1], c[2] if len(c) > 2 else None) for c in CASES]
 
 # random systems, the same generator as reference/test_gauss.py
 rng = random.Random(20261109)
@@ -90,23 +101,24 @@ for trial in range(300):
         for r in M:
             r[0] = 0
     text = "; ".join(", ".join(as_text(x) for x in r[:m]) + " | " + as_text(r[m]) for r in M)
-    CASES.append((text, trial % 11 == 5))   # a few through the -s path (the '|' still wins there)
+    CASES.append((text, trial % 11 == 5, None))   # a few through the -s path (the '|' still wins there)
 
 out = []
-for text, system in CASES:
+for text, system, param in CASES:
+    rec = {"text": text, "system": system}
+    if param:
+        rec["param"] = param
     try:
-        r = gauss_gui.analyse(text, system)
+        r = gauss_gui.analyse(text, system, param)
         r.pop("text")
-        if "parameter" in r:
-            out.append({"text": text, "system": system, "parametric": r["parameter"]})
-            continue
-        out.append({"text": text, "system": system, "expect": r})
+        rec["expect"] = r
     except ValueError as e:
-        out.append({"text": text, "system": system, "error": str(e)})
+        rec["error"] = str(e)
+    out.append(rec)
 
 os.makedirs(os.path.dirname(OUT), exist_ok=True)
 with open(OUT, "w", encoding="utf-8") as f:
     json.dump(out, f, ensure_ascii=False, indent=0)
 ok = sum("expect" in c for c in out)
-par = sum("parametric" in c for c in out)
-print(f"{len(out)} cases written to {os.path.normpath(OUT)}: {ok} solved, {par} parametric (Python only), {len(out) - ok - par} rejected")
+par = sum("expect" in c and "parameter" in c["expect"] for c in out)
+print(f"{len(out)} cases written to {os.path.normpath(OUT)}: {ok} solved ({par} with a parameter), {len(out) - ok} rejected")

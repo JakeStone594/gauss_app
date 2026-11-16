@@ -19,6 +19,8 @@ const EXAMPLES = [
   { name: 'Fractions', text: '1/2, 1/3 | 1; 1/4, -1/5 | 2' },
   { name: 'A row swap is needed', text: '0 2 1 | 3; 1 1 1 | 2; 2 0 1 | 1' },
   { name: 'Plain matrix (no system)', text: '1 2 3; 4 5 6; 7 8 10' },
+  { name: 'Parameter m — lecture p. 234', text: '2 1 -m | 0; -3 -1 3 | 2m; 4 3 m | 4' },
+  { name: 'Parameter m — lecture p. 257', text: 'mx + y + z = 1; x + my + z = m; x + y + mz = m^2', param: 'm' },
 ];
 
 const state = { rows: 3, cols: 3, aug: true, mode: 'grid', data: null, revealed: 0, items: [] };
@@ -86,7 +88,7 @@ function fitGrid(total) {
 }
 
 function validateCell(inp) {
-  inp.classList.toggle('bad', !/^[0-9+\-*/().iI^\s−·]*$/.test(inp.value));
+  inp.classList.toggle('bad', !/^[0-9+\-*/().^\s−·A-Za-z]*$/.test(inp.value));
 }
 
 function focusCell(r, c) {
@@ -181,22 +183,24 @@ function solve() {
   if (state.mode === 'grid') { text = gridToText(); $('#text').value = text; }
   else { text = $('#text').value; system = $('#text-s').checked; }
   if (!text.trim()) return showError('Nothing to solve — enter a matrix or some equations.');
+  const param = $('#param').value.trim();
   let data;
   try {
-    data = GaussEngine.analyse(text, system);
+    data = GaussEngine.analyse(text, system, param);
   } catch (err) {
     showError(err instanceof GaussEngine.GaussError ? err.message : 'Unexpected error: ' + err.message);
     return;
   }
   hideError();
-  state.data = data; state.text = text; state.system = system; state.revealed = 1;
+  state.data = data; state.text = text; state.system = system; state.param = param; state.revealed = 1;
   setHash();
-  pushHistory(text, system);
+  pushHistory(text, system, param);
   render();
 }
 
 function setHash() {
-  const h = '#q=' + encodeURIComponent(state.text) + (state.system ? '&s=1' : '') + ($('#practice').checked ? '&p=1' : '');
+  const h = '#q=' + encodeURIComponent(state.text) + (state.system ? '&s=1' : '') +
+            (state.param ? '&pm=' + encodeURIComponent(state.param) : '') + ($('#practice').checked ? '&p=1' : '');
   try { history.replaceState(null, '', h); } catch (e) { /* file:// in some WebViews */ }
 }
 
@@ -289,11 +293,20 @@ function stepEl(step, n, d) {
   return div;
 }
 
-function resultEl(sol, d) {
+function statusText(sol) {
+  if (!sol) return '';
+  if (sol.status === 'none') return 'no solution';
+  if (sol.status === 'unique') return 'exactly one solution';
+  return `infinitely many solutions (${sol.free.length} free)`;
+}
+
+/* prefix: a condition such as "For m ∉ {−2, 1} — the generic case", put before the verdict. */
+function resultEl(sol, d, prefix) {
   const box = el('div', 'result ' + sol.status);
   const body = el('div', 'body');
+  const banner = (en, he) => bi('div', 'banner', prefix ? `${prefix}: ${en}` : en, he);
   if (sol.status === 'none') {
-    box.appendChild(bi('div', 'banner', 'No solution', 'אין פתרון'));
+    box.appendChild(banner('No solution', 'אין פתרון'));
     body.append(el('p', 'note', 'The echelon form has the row'),
                 matrixEl([sol.row], d.bar),
                 el('p', '', `which says  0 = ${sol.rhs}  — impossible: no values of ${d.names.join(', ')} satisfy every equation.`),
@@ -301,8 +314,8 @@ function resultEl(sol, d) {
   } else {
     const k = sol.free.length;
     box.appendChild(sol.status === 'unique'
-      ? bi('div', 'banner', 'Exactly one solution', 'פתרון יחיד')
-      : bi('div', 'banner', `Infinitely many solutions — ${k} free variable${k > 1 ? 's' : ''}`, 'אינסוף פתרונות'));
+      ? banner('Exactly one solution', 'פתרון יחיד')
+      : banner(`Infinitely many solutions — ${k} free variable${k > 1 ? 's' : ''}`, 'אינסוף פתרונות'));
     if (k) body.appendChild(el('p', 'note',
       `Free: ${sol.free.map((f, i) => f + ' = ' + sol.params[i]).join(', ')}  (${sol.params.join(', ')} — any number in ${d.field}). ` +
       `Every other unknown is expressed through ${k > 1 ? 'them' : 'it'}:`));
@@ -334,7 +347,8 @@ function render() {
   state.items = [];
 
   const bar = el('div', 'outbar');
-  bar.append(el('span', 'note', `${d.rows}×${d.cols} over ${d.field}` + (d.bar === null ? ' — a matrix, not a system' : '')),
+  bar.append(el('span', 'note', `${d.rows}×${d.cols} over ${d.field}` + (d.parameter ? `, parameter ${d.parameter}` : '') +
+                              (d.bar === null ? ' — a matrix, not a system' : '')),
              el('span', 'spacer'));
   const copyT = el('button', '', 'Copy as text'), copyL = el('button', '', 'Copy link');
   copyT.onclick = () => copyText(d.text, copyT);
@@ -371,12 +385,15 @@ function render() {
     e.append(heading(en, he, cap), matrixEl(M, d.bar, { names: d.names, pivots: d.pivots }));
     out.appendChild(e); state.items.push(e);
   };
+  if (d.parameter) out.appendChild(el('p', 'note', `Parameter ${d.parameter}: the reduction below is the generic case — ` +
+    `it divides by expressions in ${d.parameter}; the values where those vanish are treated separately after it.`));
   phase('Phase 1 — zeros below the pivots', 1);
-  form('Echelon form', 'מטריצה מדורגת', d.echelon, 'after phase 1');
+  form('Echelon form', 'מטריצה מדורגת', d.echelon, d.parameter ? 'after phase 1, generic' : 'after phase 1');
   phase('Phase 2 — leading 1s, then zeros above the pivots', 2);
   form('Canonical echelon form', 'מטריצה מדורגת קנונית', d.canonical,
-       `rank ${d.rank} — ${d.rank} non-zero row${d.rank === 1 ? '' : 's'}`);
-  if (d.solution) { const e = resultEl(d.solution, d); out.appendChild(e); state.items.push(e); }
+       (d.parameter ? 'generic — ' : '') + `rank ${d.rank} — ${d.rank} non-zero row${d.rank === 1 ? '' : 's'}`);
+  if (d.parameter) renderParametric(d, out, showSteps);
+  else if (d.solution) { const e = resultEl(d.solution, d); out.appendChild(e); state.items.push(e); }
   else out.appendChild(el('p', 'note', 'No right-hand side, so there is nothing to solve for. ' +
     'Tick "Augmented" (or put | before the last column) to solve a system.'));
 
@@ -389,6 +406,54 @@ function render() {
     state.practiceStatus = status;
     applyReveal();
   }
+}
+
+/* The special values, the generic result, and a collapsible panel per special value. */
+function renderParametric(d, out, showSteps) {
+  const P = d.parameter, sp = d.special;
+  const sv = el('div', 'special');
+  sv.appendChild(heading('Special values of ' + P, 'ערכים מיוחדים'));
+  if (sp.origins.length) {
+    const ul = el('ul');
+    sp.origins.forEach(([e, where]) => { const li = el('li'); li.append(el('code', 'op', e + ' = 0'), '  ← ' + where); ul.appendChild(li); });
+    sv.appendChild(ul);
+    sv.appendChild(el('p', 'setline', sp.values.length ? `⟹ ${P} ∈ {${sp.values.join(', ')}}`
+                                       : sp.unsolved.length ? `⟹ no rational special value`
+                                                            : `⟹ none of these vanishes for any ${P}: the generic case is the only case`));
+  } else sv.appendChild(el('p', 'note', `No leading entry or divisor depends on ${P} — the generic case holds for every ${P}.`));
+  sp.unsolved.forEach(f => sv.appendChild(el('p', 'note', `⚠ ${f} = 0 has no rational root — treat that case by hand.`)));
+  if (sp.undefined.length) sv.appendChild(el('p', 'note', `⚠ the matrix itself is undefined at ${P} ∈ {${sp.undefined.join(', ')}} (a denominator vanishes).`));
+  out.appendChild(sv); state.items.push(sv);
+  if (d.bar === null) {
+    out.appendChild(el('p', 'note', `A matrix, not a system: the rank is ${d.rank} for every ${P} outside the special values.`));
+    return;
+  }
+  const g = resultEl(d.generic.solution, d, `For ${d.generic.condition} — the generic case`);
+  out.appendChild(g); state.items.push(g);
+  d.cases.forEach(c => {
+    const det = el('details', 'case');
+    const sum = el('summary');
+    sum.append(el('b', '', `${P} = ${c.value}`), ` — ${statusText(c.solution)}` +
+               (c.same_as_generic ? ' (the generic formula is valid here too)' : ''));
+    det.appendChild(sum);
+    det.append(heading(`At ${P} = ${c.value}`, undefined, 'the system with that value substituted'),
+               matrixEl(c.input, d.bar, { names: d.names }));
+    if (showSteps) {
+      let n = 0;
+      for (const [which, title] of [[1, 'Phase 1 — zeros below the pivots'], [2, 'Phase 2 — leading 1s, then zeros above the pivots']]) {
+        const steps = c.steps.filter(s => s.phase === which);
+        if (!steps.length) continue;
+        const box = el('div', 'phase');
+        box.appendChild(el('h3', '', title));
+        steps.forEach(s => box.appendChild(stepEl(s, ++n, d)));
+        det.appendChild(box);
+      }
+    }
+    det.append(heading('Canonical echelon form', 'מטריצה מדורגת קנונית', `rank ${c.rank}`),
+               matrixEl(c.canonical, d.bar, { names: d.names, pivots: c.pivots }),
+               resultEl(c.solution, d, `For ${P} = ${c.value}`));
+    out.appendChild(det); state.items.push(det);
+  });
 }
 
 function applyReveal() {
@@ -408,9 +473,9 @@ function flash(btn, msg) { const t = btn.textContent; btn.textContent = msg; set
 /* ───────────────────────── history, examples, hash ───────────────────────── */
 
 function loadHistory() { try { return JSON.parse(localStorage.getItem('gauss.history') || '[]'); } catch { return []; } }
-function pushHistory(text, system) {
+function pushHistory(text, system, param) {
   const h = loadHistory().filter(x => x.text !== text);
-  h.unshift({ text, system });
+  h.unshift({ text, system, param: param || '' });
   localStorage.setItem('gauss.history', JSON.stringify(h.slice(0, 5)));
   renderHistory();
 }
@@ -420,12 +485,13 @@ function renderHistory() {
   box.replaceChildren(...h.map(item => {
     const b = el('button', '', item.text.length > 48 ? item.text.slice(0, 46) + '…' : item.text);
     b.title = item.text;
-    b.onclick = () => loadInput(item.text, item.system);
+    b.onclick = () => loadInput(item.text, item.system, item.param);
     return b;
   }));
 }
 
-function loadInput(text, system = false) {
+function loadInput(text, system = false, param = '') {
+  $('#param').value = param || '';
   if (!text.includes('=') && fillGridFromText(text)) setMode('grid');
   else { setMode('text'); $('#text').value = text; $('#text-s').checked = !!system; }
   solve();
@@ -459,7 +525,7 @@ $('#solve').onclick = solve;
 $('#random').onclick = () => { if (state.mode !== 'grid') setMode('grid'); randomFill(); hideError(); };
 $('#clear').onclick = () => {
   document.querySelectorAll('#grid input').forEach(inp => { inp.value = ''; inp.classList.remove('bad'); });
-  $('#text').value = ''; $('#output').hidden = true; $('#welcome').hidden = false; hideError();
+  $('#text').value = ''; $('#param').value = ''; $('#output').hidden = true; $('#welcome').hidden = false; hideError();
   try { history.replaceState(null, '', location.pathname); } catch (e) { /* ignore */ }
   if (state.mode === 'grid') focusCell(0, 0);
 };
@@ -470,7 +536,7 @@ $('#show-steps').onchange = $('#practice').onchange = () => {
 };
 const sel = $('#examples');
 EXAMPLES.forEach((ex, i) => { const o = document.createElement('option'); o.value = i; o.textContent = ex.name; sel.appendChild(o); });
-sel.onchange = () => { if (sel.value !== '') { loadInput(EXAMPLES[+sel.value].text); sel.value = ''; } };
+sel.onchange = () => { if (sel.value !== '') { const ex = EXAMPLES[+sel.value]; loadInput(ex.text, false, ex.param || ''); sel.value = ''; } };
 document.addEventListener('keydown', e => {
   if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); solve(); }
   else if (state.practiceStatus && !$('#output').hidden && ['ArrowRight', ' '].includes(e.key) &&
@@ -485,6 +551,6 @@ if (location.protocol.startsWith('http') && 'serviceWorker' in navigator) {   //
 {
   const h = new URLSearchParams(location.hash.slice(1));
   if (h.get('p') === '1') $('#practice').checked = true;
-  if (h.get('q')) loadInput(h.get('q'), h.get('s') === '1');
+  if (h.get('q')) loadInput(h.get('q'), h.get('s') === '1', h.get('pm') || '');
   else focusCell(0, 0);
 }

@@ -5,7 +5,10 @@ row operations, written `L₂ → L₂ − 2·L₁`, every step shown with the p
 highlighted, exact arithmetic over ℚ and ℂ (fractions and complex numbers, never floats), the
 echelon and canonical forms, and the solution set — one, none, or infinitely many with parameters
 `α, β, …` — checked by substituting it back. A practice mode hides the steps and reveals them one
-at a time. Nothing leaves the device: the app has no permissions and no network.
+at a time. **Systems with a parameter** (`mx + y + z = 1, …`) are reduced generically, the special
+values of `m` are found — the zeros of every leading entry and of every expression divided by —
+and each one is solved on its own, the way the lecture states the cases. Nothing leaves the
+device: the app has no permissions and no network.
 
 It started as a command-line checker (`reference/gauss.py`) for a university course; the app is a
 JavaScript port of that engine, verified against it (see below).
@@ -24,15 +27,16 @@ build/       the APK and executables after a build (not committed)
 ## The engine is a port, and the port is verified
 
 `web/engine.js` is a line-by-line port of `reference/gauss.py` + `gauss_gui.analyse()` to
-JavaScript, with BigInt rationals instead of sympy. It is **not** trusted on its own:
-`tools/golden.py` runs 388 inputs through the Python engine (textbook examples, every edge case,
-300 random real and complex systems, 27 inputs that must be rejected) and records the full output;
-`tests/test_engine.js` then requires the JS engine to reproduce every step label, matrix entry and
-solution string exactly.
+JavaScript, with BigInt rationals — and, for a parameter, rational functions of it with its own
+factoring over ℚ — instead of sympy. It is **not** trusted on its own: `tools/golden.py` runs 418
+inputs through the Python engine (textbook examples, every edge case, 300 random real and complex
+systems, 28 systems with a parameter, 29 inputs that must be rejected) and records the full output;
+`tests/test_engine.js` then requires the JS engine to reproduce every step label, matrix entry,
+special value and solution string exactly.
 
 ```
 python3 -I tools/golden.py        # regenerate the corpus after any change to the Python engine (needs sympy)
-node tests/test_engine.js         # 388 of 388 must match
+node tests/test_engine.js         # 418 of 418 must match
 python3 -I reference/test_gauss.py   # the Python engine's own tests (lecture examples + 300 random systems vs sympy)
 ```
 
@@ -103,11 +107,10 @@ that survives the machine. Lose it and updates become reinstalls; leak it and an
 
 ## Limits, the same as the desktop tool
 
-At most 10 rows and 10 columns; powers up to a two-digit exponent, not chained. Systems with a
-parameter (`m`) are refused by the app's engine: the Python reference (`reference/gauss.py -p m`,
-and its browser GUI) handles them — generic reduction, the special values, each case solved on
-its own — but that part is not ported to JavaScript yet; in the app, substitute a value to check
-one case.
+At most 10 rows and 10 columns; powers up to a two-digit exponent, not chained. One parameter at
+a time, a single letter, with real coefficients; its special values are found as rational roots
+(the lecture's cases) — a factor without a rational root, such as `m² − 2`, is reported for work
+by hand rather than solved.
 
 ## Licence
 

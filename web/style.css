@@ -55,6 +55,12 @@ select { font: inherit; background: var(--card); color: var(--fg); border: 1px s
 .switch { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
 .actions, .options { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; margin-top: 12px; }
 .options label { display: inline-flex; gap: 6px; align-items: center; cursor: pointer; }
+#param { width: 2.6em; text-align: center; font: 15px var(--mono); padding: 4px 6px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); color: var(--fg); }
+.special ul { margin: 6px 0; padding-left: 20px; }
+.special li { margin: 3px 0; }
+details.case { margin: 10px 0; border: 1px solid var(--line); border-radius: 10px; padding: 6px 14px; }
+details.case > summary { cursor: pointer; padding: 6px 0; }
+details.case[open] > summary { border-bottom: 1px solid var(--line); margin-bottom: 8px; }
 .hint { color: var(--muted); font-size: .86em; margin: 10px 0 0; }
 textarea { width: 100%; font: 15px/1.4 var(--mono); padding: 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); color: var(--fg); resize: vertical; }
 textarea:focus, .grid input:focus { outline: 2px solid var(--accent); outline-offset: -1px; border-color: var(--accent); }

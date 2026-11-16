@@ -32,15 +32,10 @@ let pass = 0;
 const fails = [];
 for (const c of golden) {
   let got = null, err = null;
-  try { got = engine.analyse(c.text, c.system); } catch (e) { if (!(e instanceof engine.GaussError)) throw e; err = e; }
+  try { got = engine.analyse(c.text, c.system, c.param); } catch (e) { if (!(e instanceof engine.GaussError)) throw e; err = e; }
   if (c.error !== undefined) {
     if (err) pass++;
     else fails.push(`${JSON.stringify(c.text)}: expected a rejection (${c.error}) but got a result`);
-    continue;
-  }
-  if (c.parametric !== undefined) {      // solved case-by-case by the Python engine; not ported yet
-    if (err) pass++;
-    else fails.push(`${JSON.stringify(c.text)}: a parameter (${c.parametric}) must be rejected by the app`);
     continue;
   }
   if (err) { fails.push(`${JSON.stringify(c.text)}: threw "${err.message}"`); continue; }

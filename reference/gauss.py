@@ -118,8 +118,13 @@ def _exact(expr):
 
 def parse_number(text, params=None):
     """params: None → numbers only; "auto" → a letter is a parameter; a set of names → those are."""
+    local = {"i": sp.I, "I": sp.I}
+    if params is not None:   # every other name is a symbol — never sympy's sqrt, E, pi, …
+        for tok in re.findall(r"[A-Za-z_][A-Za-z_0-9]*", text):
+            if tok not in ("i", "I"):
+                local[tok] = sp.Symbol(tok)
     try:
-        v = parse_expr(text.strip(), local_dict={"i": sp.I, "I": sp.I}, transformations=TRANSFORMS)
+        v = parse_expr(text.strip(), local_dict=local, transformations=TRANSFORMS)
     except Exception as e:  # noqa: BLE001 — report any parse failure the same way
         raise ValueError(f"cannot read the entry {text!r}: {e}") from None
     v = sp.expand(_exact(sp.sympify(v)))
@@ -127,6 +132,9 @@ def parse_number(text, params=None):
         return num(v)
     letters = {str(x) for x in v.free_symbols}
     if params == "auto" or (params and letters <= set(params)):
+        for name in sorted(letters):
+            if len(name) != 1:
+                raise ValueError(f"a parameter is a single letter — found {name!r} in the entry {text!r}")
         return symnorm(v)
     raise ValueError(f"the entry {text!r} contains a letter other than i. For a system with a "
                      "parameter, name it with -p (e.g. -p m) and the cases are worked out for you.")
@@ -194,6 +202,8 @@ def parse_input(text, system=False, param=None):
     symbols = set().union(*(x.free_symbols for row in rows for x in row))
     if len(symbols) > 1:
         raise ValueError("one parameter at a time — found " + ", ".join(sorted(map(str, symbols))))
+    if symbols and any(x.has(sp.I) for row in rows for x in row):
+        raise ValueError("a parameter together with complex numbers is not supported")
     return rows, bar, names, (next(iter(symbols)) if symbols else None)
 
 
@@ -251,6 +261,8 @@ def parse_equations(lines, param=None):
         row = [norm(e.coeff(s)) for s in syms]
         const = norm(e.subs({s: 0 for s in syms}))
         rows.append(row + [norm(-const)])
+    if psym is not None and any(x.has(sp.I) for row in rows for x in row):
+        raise ValueError("a parameter together with complex numbers is not supported")
     return rows, len(syms), names, psym
 
 
@@ -282,6 +294,27 @@ def _tidy(text):
     return re.sub(r"(^|[\s(])-", r"\1−", text)
 
 
+def _poly_text(poly, sym):
+    """A polynomial written out: terms in descending degree — except the two-term case
+    'positive number minus something', written number first (1 − m, 2 − m²) — as 2m² − 3m + 1."""
+    terms = [(k, c) for (k,), c in sp.Poly(sp.expand(poly), sym).terms()]   # descending degree
+    if len(terms) == 2 and terms[1][0] == 0 and terms[1][1] > 0 and terms[0][1] < 0:
+        terms = [terms[1], terms[0]]
+    out = ""
+    for idx, (k, c) in enumerate(terms):
+        neg = c < 0
+        mag = -c if neg else c
+        mono = "" if k == 0 else str(sym) + ("" if k == 1 else str(k).translate(SUP))
+        if k == 0:
+            body = fmt(mag)
+        elif mag == 1:
+            body = mono
+        else:
+            body = (fmt(mag) if mag.is_Integer else f"({fmt(mag)})") + mono
+        out += (("−" if neg else "") if idx == 0 else (" − " if neg else " + ")) + body
+    return out
+
+
 def _poly_str(poly, sym):
     """A polynomial in the parameter, written as the lecture writes it: 1 − m, m + 2, 2m + 3,
     m² + 1 — and factored when that is shorter: 6(m − 1), (1 − m)(m + 2), (m + 1)²."""
@@ -293,7 +326,11 @@ def _poly_str(poly, sym):
             and factors[0][0].coeff(sym, 0) < 0:
         coeff, factors = -coeff, [(sp.expand(-factors[0][0]), 1)] + factors[1:]   # −(m − 1) → 1 − m
     if coeff == 1 and len(factors) == 1 and factors[0][1] == 1:
-        return _tidy(str(sp.expand(factors[0][0])))
+        return _poly_text(factors[0][0], sym)
+    if coeff == -1 and len(factors) == 1 and factors[0][1] == 1:
+        t = sp.expand(-factors[0][0])                       # −(m² − 2) → 2 − m², but −(m + 1) stays
+        if any(c > 0 for c in sp.Poly(t, sym).coeffs()):
+            return _poly_text(t, sym)
     parts = []
     if coeff == -1:
         parts.append("−")
@@ -301,7 +338,7 @@ def _poly_str(poly, sym):
         parts.append(fmt(coeff) if coeff.is_Integer else f"({fmt(coeff)})")
     factors = sorted(factors, key=lambda fk: 0 if fk[0].is_Symbol else 1)
     for f, k in factors:
-        body = _tidy(str(sp.expand(f)))
+        body = _poly_text(f, sym)
         if not f.is_Symbol:
             body = f"({body})"
         parts.append(body + (str(k).translate(SUP) if k > 1 else ""))
@@ -593,21 +630,24 @@ def solve(red, original, names, field):
 # ─────────────────────────────── systems with a parameter ───────────────────────────────
 
 def special_values(exprs, sym):
-    """The values of the parameter at which any of the expressions vanishes, as exact roots,
-    plus the factors whose roots sympy cannot write in closed form."""
+    """The RATIONAL values of the parameter at which any of the expressions vanishes — the
+    lecture's cases — plus the irreducible factors of degree ≥ 2, whose roots are not rational
+    and are left for work by hand."""
     values, unsolved = [], []
     for e in exprs:
         numer, _ = sp.fraction(sp.cancel(e))
         poly = sp.Poly(numer, sym)
         if poly.degree() < 1:
             continue
-        rts = sp.roots(poly)
-        for v in rts:
+        for v in sp.roots(poly, filter="Q"):
             if v not in values:
                 values.append(v)
-        if sum(rts.values()) < poly.degree():
-            unsolved.append(sp.factor(numer))
-    values.sort(key=lambda v: (0 if v.is_real else 1, float(sp.re(v)), float(sp.im(v))))
+        for f, _k in sp.factor_list(numer, sym)[1]:
+            if sp.degree(f, sym) >= 2:
+                txt = _poly_str(f, sym)
+                if txt not in unsolved:
+                    unsolved.append(txt)
+    values.sort()
     return values, unsolved
 
 
@@ -651,7 +691,7 @@ def parametric(rows, bar, sym):
         for x in row:
             d = sp.fraction(sp.cancel(x))[1]
             if d.free_symbols:
-                for v in sp.roots(sp.Poly(d, sym)):
+                for v in sp.roots(sp.Poly(d, sym), filter="Q"):
                     if v not in undefined:
                         undefined.append(v)
     generic = solution(red, rows) if bar is not None else None
@@ -703,12 +743,14 @@ def print_parametric(P, rows, names, field, quiet=False, answer_only=False):
             print(f"  {fmt(e)} = 0   ← {where}")
         if P["values"]:
             print(f"  ⟹ {sym} ∈ {{{', '.join(fmt(v) for v in P['values'])}}}")
+        elif P["unsolved"]:
+            print(f"  ⟹ no rational special value")
         else:
             print(f"  ⟹ none of these vanishes for any {sym}: the generic case is the only case")
     else:
         print(f"  no leading entry or divisor depends on {sym} — the generic case holds for every {sym}")
     for f in P["unsolved"]:
-        print(f"  ⚠ the roots of {fmt(f)} could not be written exactly; treat them by hand")
+        print(f"  ⚠ {f} = 0 has no rational root — treat that case by hand")
     if P["undefined"]:
         print(f"  ⚠ the matrix itself is undefined at {sym} ∈ {{{', '.join(fmt(v) for v in P['undefined'])}}} (a denominator vanishes)")
     print(RULE)
